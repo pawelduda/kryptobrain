@@ -31,7 +31,6 @@ defmodule KryptoBrain.Mixfile do
   defp deps do
     [
       {:spell, github: "Zatvobor/spell", ref: "5f055dcc4b8b15c55dbc6f1f20c54fc4ebfbfe25"},
-      {:websocket_client, github: "jeremyong/websocket_client", tag: "v0.7"},
       {:poison, "~> 1.4"}
     ]
   end
