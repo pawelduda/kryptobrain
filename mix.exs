@@ -15,7 +15,7 @@ defmodule KryptoBrain.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger],
+    [extra_applications: [:logger, :spell],
      mod: {KryptoBrain.Application, []}]
   end
 
@@ -29,6 +29,10 @@ defmodule KryptoBrain.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:spell, github: "Zatvobor/spell", ref: "5f055dcc4b8b15c55dbc6f1f20c54fc4ebfbfe25"},
+      {:websocket_client, github: "jeremyong/websocket_client", tag: "v0.7"},
+      {:poison, "~> 1.4"}
+    ]
   end
 end
