@@ -23,9 +23,7 @@ defmodule KryptoBrain.Api.Poloniex do
     # Appropriate labels for these data are, in order:
     # currencyPair, last, lowestAsk, highestBid, percentChange, baseVolume,
     # quoteVolume, isFrozen, 24hrHigh, 24hrLow
-    [
-      currency_pair, last, lowest_ask, highest_bid, percent_change,
-      base_volume, quote_volume, is_frozen, l24_hr_high, l24_hr_low
-    ] = data
+    [ currency_pair, last, lowest_ask, highest_bid, percent_change,
+      base_volume, quote_volume, is_frozen, l24_hr_high, l24_hr_low ] = data
   end
 end
