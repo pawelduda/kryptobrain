@@ -2,7 +2,12 @@ defmodule KryptoBrain.Api.Poloniex do
   @wsuri "wss://api.poloniex.com"
   @topic "ticker"
 
-  def subscribe_to_ticker do
+  def start_link do
+    Task.start_link(fn -> subscribe_to_ticker() end)
+    {:ok, self}
+  end
+
+  defp subscribe_to_ticker do
     # {:ok, _} = Crossbar.start()
     {:ok, connection} = Spell.connect(@wsuri, realm: "realm1", roles: [Spell.Role.Subscriber])
     {:ok, subscription} = Spell.call_subscribe(connection, @topic)
