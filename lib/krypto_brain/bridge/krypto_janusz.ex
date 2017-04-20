@@ -1,5 +1,4 @@
 defmodule KryptoBrain.Bridge.KryptoJanusz do
-  import Ecto.Query, only: [from: 2]
   use Export.Python
 
   @predict_script_path "~/kryptojanusz/v2"
