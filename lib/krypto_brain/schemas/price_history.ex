@@ -1,4 +1,4 @@
-defmodule PriceHistory do
+defmodule KryptoBrain.Schemas.PriceHistory do
   use Ecto.Schema
 
   schema "price_history" do

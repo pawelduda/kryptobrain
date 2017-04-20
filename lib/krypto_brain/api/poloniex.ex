@@ -1,6 +1,8 @@
 defmodule KryptoBrain.Api.Poloniex do
   use GenServer
 
+  alias KryptoBrain.Schemas.PriceHistory
+
   @wsuri "wss://api.poloniex.com"
   @topic "ticker"
 
@@ -24,7 +26,7 @@ defmodule KryptoBrain.Api.Poloniex do
 
   defp subscribe_to_ticker do
     # {:ok, _} = Crossbar.start()
-    # FIXME: this timeout does not work, need to edit it manually in peer.ex:114
+    # FIXME: this timeout does not work, need to edit it manually in deps (peer.ex:114)
     {:ok, connection} = Spell.connect(@wsuri, realm: "realm1", roles: [Spell.Role.Subscriber], timeout: 10_000)
     {:ok, subscription} = Spell.call_subscribe(connection, @topic)
 
@@ -34,7 +36,7 @@ defmodule KryptoBrain.Api.Poloniex do
   defp receive_event(connection, subscription) do
     case Spell.receive_event(connection, subscription) do
       {:ok, event} -> save_event(event)
-      {:error, reason} -> {:error, reason}
+      {:error, _reason} -> nil
     end
 
     receive_event(connection, subscription)
