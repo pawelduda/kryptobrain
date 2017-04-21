@@ -11,7 +11,7 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
       |> Calendar.DateTime.Format.unix
 
     %HTTPoison.Response{body: poloniex_response} =
-      poloniex_prices_api_url(currency_pair, ten_days_ago_gmt_timestamp) |> HTTPoison.get!()
+      poloniex_prices_api_url(currency_pair, ten_days_ago_gmt_timestamp) |> HTTPoison.get!
 
     {:ok, python} = Python.start(python_path: Path.expand(@predict_script_path))
     Python.call(python, "predictor", "predict_newest", [poloniex_response, @columns])

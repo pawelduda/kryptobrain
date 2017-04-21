@@ -11,6 +11,18 @@ config :krypto_brain, KryptoBrain.Repo,
 
 config :krypto_brain, ecto_repos: [KryptoBrain.Repo]
 
+config :krypto_brain, KryptoBrain.Trading.Trader,
+  poloniex_api_key: System.get_env("POLONIEX_API_KEY") || "${POLONIEX_API_KEY}",
+  poloniex_api_secret: System.get_env("POLONIEX_API_SECRET") || "${POLONIEX_API_SECRET}"
+
+# config :krypto_brain, traders: [
+#   [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
+  # [currency_pair: "BTC_LTC", start_btc_balance: 0.008],
+  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
+  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
+  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008]
+# ]
+
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
 # file won't be loaded nor affect the parent project. For this reason,
