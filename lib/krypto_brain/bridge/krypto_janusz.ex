@@ -12,7 +12,9 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
 
     poloniex_api_url = poloniex_prices_api_url(altcoin_symbol, ten_days_ago_gmt_timestamp)
     {:ok, python} = Python.start(python_path: Path.expand(@predict_script_path))
-    Python.call(python, "predictor", "predict_newest", [poloniex_api_url, @columns])
+    prediction_data = Python.call(python, "predictor", "predict_newest", [poloniex_api_url, @columns])
+    Python.stop(python)
+    prediction_data
   end
 
   defp poloniex_prices_api_url(altcoin_symbol, start_unix, end_unix \\ 9_999_999_999) do

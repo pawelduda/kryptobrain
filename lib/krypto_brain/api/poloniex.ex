@@ -16,7 +16,7 @@ defmodule KryptoBrain.Api.Poloniex do
   end
 
   def schedule_work do
-    Process.send_after(self(), :subscribe_to_ticker, 1_000)
+    Process.send_after(self(), :subscribe_to_ticker, Enum.random(1..5) * 1_000)
   end
 
   def handle_info(:subscribe_to_ticker, state) do
