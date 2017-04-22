@@ -22,8 +22,11 @@ defmodule KryptoBrain.Trading.Trader do
     schedule_work()
 
     state = case :ets.lookup(:trading_state_holder, alt_symbol) do
-      [{^alt_symbol, previous_state}] -> previous_state
+      [{^alt_symbol, previous_state}] ->
+        Logger.debug("Trader #{alt_symbol} started, restoring backed-up state: #{previous_state}")
+        previous_state
       [] ->
+        Logger.debug("Trader #{alt_symbol} started, starting with initial state")
         %{
           alt_symbol: alt_symbol,
           btc_balance: btc_balance,
@@ -47,6 +50,7 @@ defmodule KryptoBrain.Trading.Trader do
 
   def terminate(reason, state) do
     :ets.insert(:trading_state_holder, {state[:alt_symbol], state})
+    :ok
   end
 
   defp refresh_balances(state) do
@@ -69,7 +73,7 @@ defmodule KryptoBrain.Trading.Trader do
 
     case balances do
       %{"error" => error} -> raise error
-      _ -> Logger.info("#{inspect(balances)}")
+      _ -> nil
     end
 
     {alt_balance, ""} = balances[state[:alt_symbol]] |> Float.parse
@@ -162,7 +166,7 @@ defmodule KryptoBrain.Trading.Trader do
       ]
     )
     response_body = Poison.decode!(response_body)
-    IO.inspect(response_body)
+    Logger.info(inspect(response_body))
 
     case response_body do
       # if success:
@@ -174,7 +178,7 @@ defmodule KryptoBrain.Trading.Trader do
         # %{"error" => "Unable to fill order completely."} ->
 
       %{"resultingTrades" => [trades]} ->
-        Logger.info("#{inspect(trades)}")
+        Logger.info(inspect(trades))
 
         state = state
                 |> Map.update!(:btc_balance, fn(_) -> 0.0 end)
@@ -213,7 +217,7 @@ defmodule KryptoBrain.Trading.Trader do
       ]
     )
     response_body = Poison.decode!(response_body)
-    IO.inspect(response_body)
+    Logger.info(inspect(response_body))
 
     case response_body do
       # if success:
@@ -225,7 +229,7 @@ defmodule KryptoBrain.Trading.Trader do
         # %{"error" => "Unable to fill order completely."} ->
 
       %{"resultingTrades" => [trades]} ->
-        Logger.info("#{inspect(trades)}")
+        Logger.info(inspect(trades))
 
         btc_amount_after_trade = state[:alt_balance] * state[:most_recent_alt_price]
         trade_fee = btc_amount_after_trade * 0.0025 # taker fee

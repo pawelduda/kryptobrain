@@ -10,15 +10,15 @@ defmodule KryptoBrain.Application do
 
     children = [
       supervisor(KryptoBrain.Repo, []),
-      supervisor(KryptoBrain.Trading.StateHolder, []),
+      worker(KryptoBrain.Trading.StateHolder, []),
 
-      worker(KryptoBrain.Trading.Trader, ["XEM", 0.0008, C._BTC], id: 1),
-      worker(KryptoBrain.Trading.Trader, ["PINK", 0.0008, C._BTC], id: 2),
-      worker(KryptoBrain.Trading.Trader, ["MAID", 0.0008, C._BTC], id: 3),
-      worker(KryptoBrain.Trading.Trader, ["DGB", 0.0008, C._BTC], id: 4),
+      worker(KryptoBrain.Trading.Trader, ["XEM", 0.013, C._BTC], id: 1),
+      worker(KryptoBrain.Trading.Trader, ["PINK", 0.013, C._BTC], id: 2),
+      worker(KryptoBrain.Trading.Trader, ["MAID", 0.013, C._BTC], id: 3),
+      worker(KryptoBrain.Trading.Trader, ["DGB", 0.013, C._ALT], id: 4)
     ]
 
-    opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor]
+    opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor, max_seconds: 1, max_restarts: 1_000_000]
     Supervisor.start_link(children, opts)
   end
 end
