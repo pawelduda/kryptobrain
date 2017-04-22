@@ -20,13 +20,20 @@ defmodule KryptoBrain.Trading.Trader do
 
   def init([alt_symbol, btc_balance, currency_owned]) do
     schedule_work()
-    {:ok, %{
-      alt_symbol: alt_symbol,
-      btc_balance: btc_balance,
-      alt_balance: 0.0,
-      currency_owned: currency_owned,
-      most_recent_alt_price: nil
-    }}
+
+    state = case :ets.lookup(:trading_state_holder, alt_symbol) do
+      [{^alt_symbol, previous_state}] -> previous_state
+      [] ->
+        %{
+          alt_symbol: alt_symbol,
+          btc_balance: btc_balance,
+          alt_balance: 0.0,
+          currency_owned: currency_owned,
+          most_recent_alt_price: nil
+        }
+    end
+
+    {:ok, state}
   end
 
   defp schedule_work do
@@ -36,6 +43,10 @@ defmodule KryptoBrain.Trading.Trader do
   def handle_info(:start_trading, state) do
     refresh_balances(state) |> trade_loop
     {:noreply, state}
+  end
+
+  def terminate(reason, state) do
+    :ets.insert(:trading_state_holder, {state[:alt_symbol], state})
   end
 
   defp refresh_balances(state) do
