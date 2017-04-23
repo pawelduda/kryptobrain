@@ -118,6 +118,11 @@ defmodule KryptoBrain.Trading.Requests do
     Poison.decode!(response_body)
   end
 
+  def get_ticker_data do
+    %HTTPoison.Response{body: response_body} = HTTPoison.get!("https://poloniex.com/public?command=returnTicker")
+    Poison.decode!(response_body)
+  end
+
   defp map_altcoin_symbol_to_api_key(alt_symbol) do
     api_key_id = Application.get_env(:krypto_brain, __MODULE__)[String.to_atom(alt_symbol)]
     Application.get_env(:krypto_brain, __MODULE__)[:"poloniex_api_key#{api_key_id}"]

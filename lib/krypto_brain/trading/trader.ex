@@ -83,19 +83,19 @@ defmodule KryptoBrain.Trading.Trader do
     prediction_str = case prediction do
       1 ->
         case state[:currency_owned] do
-          C._BTC -> "BUY"
-          C._ALT -> "BUY but #{state[:alt_symbol]} is already bought"
+          C._BTC -> "#{IO.ANSI.green}BUY"
+          C._ALT -> "#{IO.ANSI.blue}BUY (already bought)"
         end
       0 ->
-        "HOLD"
+        "#{IO.ANSI.blue}HOLD"
       -1 ->
         case state[:currency_owned] do
-          C._BTC -> "SELL but #{state[:alt_symbol]} is already sold"
-          C._ALT -> "SELL"
+          C._BTC -> "#{IO.ANSI.blue}SELL (already sold)"
+          C._ALT -> "#{IO.ANSI.red}SELL"
         end
     end
 
-    Logger.info("Prediction for #{state[:alt_symbol]}: #{prediction_str}")
+    Logger.info("Predicted action for #{state[:alt_symbol]}: #{prediction_str}")
 
     state = case prediction do
       C._BUY ->
@@ -105,7 +105,10 @@ defmodule KryptoBrain.Trading.Trader do
 
         # if !Enum.empty?(sell_orders), do: true = cancel_orders(sell_orders, state[:alt_symbol])
         # if Enum.empty?(buy_orders) && state[:currency_owned] == C._BTC, do: state = place_buy_order(state)
-        if state[:currency_owned] == C._BTC, do: state = place_buy_order(state)
+        if state[:currency_owned] == C._BTC do
+          suggested_trade_price = suggested_trade_price(state[:alt_symbol], :buy)
+          state = place_buy_order(state, suggested_trade_price)
+        end
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
         state
@@ -118,7 +121,10 @@ defmodule KryptoBrain.Trading.Trader do
 
         # if !Enum.empty?(buy_orders), do: true = cancel_orders(buy_orders, state[:alt_symbol])
         # if Enum.empty?(sell_orders) && state[:currency_owned] == C._ALT, do: state = place_sell_order(state)
-        if state[:currency_owned] == C._ALT, do: state = place_sell_order(state)
+        if state[:currency_owned] == C._ALT do
+          suggested_trade_price = suggested_trade_price(state[:alt_symbol], :sell)
+          state = place_sell_order(state, suggested_trade_price)
+        end
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
         state
@@ -130,8 +136,8 @@ defmodule KryptoBrain.Trading.Trader do
     trade_loop(state)
   end
 
-  defp place_buy_order(state) do
-    place_buy_order_response = Requests.place_buy_order(state[:most_recent_alt_price], state[:btc_balance], state[:alt_symbol])
+  defp place_buy_order(state, price) do
+    place_buy_order_response = Requests.place_buy_order(price, state[:btc_balance], state[:alt_symbol])
     Logger.info(inspect(place_buy_order_response))
 
     case place_buy_order_response do
@@ -143,18 +149,18 @@ defmodule KryptoBrain.Trading.Trader do
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
       %{"error" => "Unable to fill order completely."} ->
         Logger.warn("Attempted to buy #{state[:alt_symbol]} but could not fill the order.")
-      %{"error" => "Not enough BTC."} ->
-        Logger.error("Attempted to buy #{state[:alt_symbol]} but failed due to low BTC balance, lowering BTC balance by 10%.")
+      # %{"error" => "Not enough BTC."} ->
+        # Logger.error("Attempted to buy #{state[:alt_symbol]} but failed due to low BTC balance, lowering BTC balance by 10%.")
 
-        state = state |> Map.update!(:btc_balance, fn(btc_balance) -> btc_balance * 0.9 end)
-        state = place_buy_order(state)
+        # state = state |> Map.update!(:btc_balance, fn(btc_balance) -> btc_balance * 0.9 end)
+        # state = place_buy_order(state, price)
     end
 
     state
   end
 
-  defp place_sell_order(state) do
-    place_sell_order_response = Requests.place_sell_order(state[:most_recent_alt_price], state[:alt_balance], state[:alt_symbol])
+  defp place_sell_order(state, price) do
+    place_sell_order_response = Requests.place_sell_order(price, state[:alt_balance], state[:alt_symbol])
     Logger.info(inspect(place_sell_order_response))
 
     case place_sell_order_response do
@@ -186,5 +192,20 @@ defmodule KryptoBrain.Trading.Trader do
     end
 
     true
+  end
+
+  defp suggested_trade_price(alt_symbol, buy_or_sell) do
+    ticker_data_response = Requests.get_ticker_data
+                           |> Enum.find(fn(currency_data) -> elem(currency_data, 0) === "BTC_#{alt_symbol}" end)
+                           |> elem(1)
+
+    case buy_or_sell do
+      :buy  ->
+        {lowest_ask, ""} = Map.fetch!(ticker_data_response, "lowestAsk") |> Float.parse
+        lowest_ask
+      :sell ->
+        {highest_bid, ""} = Map.fetch!(ticker_data_response, "highestBid") |> Float.parse
+        highest_bid
+    end
   end
 end
