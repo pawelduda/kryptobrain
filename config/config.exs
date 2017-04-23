@@ -11,7 +11,7 @@ config :krypto_brain, KryptoBrain.Repo,
 
 config :krypto_brain, ecto_repos: [KryptoBrain.Repo]
 
-config :krypto_brain, KryptoBrain.Trading.Trader,
+config :krypto_brain, KryptoBrain.Trading.Requests,
   poloniex_api_key: System.get_env("POLONIEX_API_KEY") || "${POLONIEX_API_KEY}",
   poloniex_api_secret: System.get_env("POLONIEX_API_SECRET") || "${POLONIEX_API_SECRET}"
 

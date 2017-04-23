@@ -9,8 +9,9 @@
 # - Need to manually kill Python instances after crash, or memory will run out
 
 defmodule KryptoBrain.Trading.Trader do
-  require KryptoBrain.Constants
   alias KryptoBrain.Constants, as: C
+  alias KryptoBrain.Trading.Requests
+  require KryptoBrain.Constants
   require Logger
   use GenServer
 
@@ -55,29 +56,14 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp refresh_balances(state) do
-    post_data = %{command: "returnBalances", nonce: get_nonce()}
-    encoded_post_data = post_data |> URI.encode_query
-    sign = :crypto.hmac(
-      :sha512, Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_secret], encoded_post_data
-    ) |> Base.encode16
+    refresh_balances_response = Requests.refresh_balances()
 
-    %HTTPoison.Response{body: balances} = HTTPoison.post!(
-      "https://poloniex.com/tradingApi",
-      encoded_post_data,
-      [
-        {"Content-Type", "application/x-www-form-urlencoded"},
-        {"Key", Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_key]},
-        {"Sign", sign}
-      ]
-    )
-    balances = Poison.decode!(balances)
-
-    case balances do
+    case refresh_balances_response do
       %{"error" => error} -> raise error
       _ -> nil
     end
 
-    {alt_balance, ""} = balances[state[:alt_symbol]] |> Float.parse
+    {alt_balance, ""} = refresh_balances_response[state[:alt_symbol]] |> Float.parse
 
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
@@ -114,7 +100,7 @@ defmodule KryptoBrain.Trading.Trader do
 
     state = case prediction do
       C._BUY ->
-        # orders = get_open_orders(state[:alt_symbol])
+        # orders = Requests.get_open_orders(state[:alt_symbol])
         # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
         # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
@@ -127,7 +113,7 @@ defmodule KryptoBrain.Trading.Trader do
       C._HOLD ->
         state
       C._SELL ->
-        # orders = get_open_orders(state[:alt_symbol])
+        # orders = Requests.get_open_orders(state[:alt_symbol])
         # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
         # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
@@ -146,7 +132,7 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp place_buy_order(state) do
-    place_buy_order_response = do_place_buy_order(state)
+    place_buy_order_response = Requests.place_buy_order(state[:most_recent_alt_price], state[:btc_balance], state[:alt_symbol])
     Logger.info(inspect(place_buy_order_response))
 
     case place_buy_order_response do
@@ -162,43 +148,14 @@ defmodule KryptoBrain.Trading.Trader do
         Logger.error("Attempted to buy #{state[:alt_symbol]} but failed due to low BTC balance, lowering BTC balance by 10%.")
 
         state = state |> Map.update!(:btc_balance, fn(btc_balance) -> btc_balance * 0.9 end)
-        do_place_buy_order(state)
+        state = place_buy_order(state)
     end
 
     state
   end
 
-  defp do_place_buy_order(state) do
-    rate = state[:most_recent_alt_price]
-    amount = state[:btc_balance] / state[:most_recent_alt_price]
-
-    post_data = %{
-      command: "buy",
-      currencyPair: "BTC_#{state[:alt_symbol]}",
-      rate: rate,
-      amount: amount,
-      fillOrKill: 1,
-      nonce: get_nonce()
-    }
-    encoded_post_data = post_data |> URI.encode_query
-    sign = :crypto.hmac(
-      :sha512, Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_secret], encoded_post_data
-    ) |> Base.encode16
-
-    %HTTPoison.Response{body: response_body} = HTTPoison.post!(
-      "https://poloniex.com/tradingApi",
-      encoded_post_data,
-      [
-        {"Content-Type", "application/x-www-form-urlencoded"},
-        {"Key", Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_key]},
-        {"Sign", sign}
-      ]
-    )
-    Poison.decode!(response_body)
-  end
-
   defp place_sell_order(state) do
-    place_sell_order_response = do_place_sell_order(state)
+    place_sell_order_response = Requests.place_sell_order(state[:most_recent_alt_price], state[:alt_balance], state[:alt_symbol])
     Logger.info(inspect(place_sell_order_response))
 
     case place_sell_order_response do
@@ -219,86 +176,12 @@ defmodule KryptoBrain.Trading.Trader do
     state
   end
 
-  defp do_place_sell_order(state) do
-    post_data = %{
-      command: "sell",
-      currencyPair: "BTC_#{state[:alt_symbol]}",
-      rate: state[:most_recent_alt_price],
-      amount: state[:alt_balance],
-      fillOrKill: 1,
-      nonce: get_nonce()
-    }
-    encoded_post_data = post_data |> URI.encode_query
-    sign = :crypto.hmac(
-      :sha512, Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_secret], encoded_post_data
-    ) |> Base.encode16
-
-    %HTTPoison.Response{body: response_body} = HTTPoison.post!(
-      "https://poloniex.com/tradingApi",
-      encoded_post_data,
-      [
-        {"Content-Type", "application/x-www-form-urlencoded"},
-        {"Key", Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_key]},
-        {"Sign", sign}
-      ]
-    )
-    Poison.decode!(response_body)
-  end
-
-  defp get_open_orders(alt_symbol) do
-    post_data = %{
-      command: "returnOpenOrders",
-      currencyPair: "BTC_#{alt_symbol}",
-      nonce: get_nonce()
-    }
-    encoded_post_data = post_data |> URI.encode_query
-    sign = :crypto.hmac(
-      :sha512, Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_secret], encoded_post_data
-    ) |> Base.encode16
-
-    %HTTPoison.Response{body: response_body} = HTTPoison.post!(
-      "https://poloniex.com/tradingApi",
-      encoded_post_data,
-      [
-        {"Content-Type", "application/x-www-form-urlencoded"},
-        {"Key", Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_key]},
-        {"Sign", sign}
-      ]
-    )
-
-    Poison.decode!(response_body)
-  end
-
   defp cancel_orders(orders) do
     Enum.each orders, fn(order) ->
-      post_data = %{
-        command: "cancelOrder",
-        orderNumber: order["orderNumber"],
-        nonce: get_nonce()
-      }
-      encoded_post_data = post_data |> URI.encode_query
-      sign = :crypto.hmac(
-        :sha512, Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_secret], encoded_post_data
-      ) |> Base.encode16
-
-      %HTTPoison.Response{body: response_body} = HTTPoison.post!(
-        "https://poloniex.com/tradingApi",
-        encoded_post_data,
-        [
-          {"Content-Type", "application/x-www-form-urlencoded"},
-          {"Key", Application.get_env(:krypto_brain, __MODULE__)[:poloniex_api_key]},
-          {"Sign", sign}
-        ]
-      )
-
-      %{"success" => 1} = Poison.decode!(response_body)
+      %{"success" => 1} = Requests.cancel_order(order)
       Logger.info("Order #{order["orderNumber"]} cancelled.")
     end
 
     true
-  end
-
-  defp get_nonce() do
-    GenServer.call(KryptoBrain.Trading.NonceGenerator, :get_nonce)
   end
 end
