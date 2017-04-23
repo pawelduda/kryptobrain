@@ -1,3 +1,5 @@
+# DEPRECATED
+
 defmodule KryptoBrain.Trading.NonceGenerator do
   use GenServer
 

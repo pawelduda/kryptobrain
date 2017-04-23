@@ -12,9 +12,23 @@ config :krypto_brain, KryptoBrain.Repo,
 config :krypto_brain, ecto_repos: [KryptoBrain.Repo]
 
 config :krypto_brain, KryptoBrain.Trading.Requests,
-  poloniex_api_key: System.get_env("POLONIEX_API_KEY") || "${POLONIEX_API_KEY}",
-  poloniex_api_secret: System.get_env("POLONIEX_API_SECRET") || "${POLONIEX_API_SECRET}"
+  MAID: 0,
+  poloniex_api_key0: System.get_env("POLONIEX_API_KEY0") || "${POLONIEX_API_KEY0}",
+  poloniex_api_secret0: System.get_env("POLONIEX_API_SECRET0") || "${POLONIEX_API_SECRET0}",
 
+  PINK: 1,
+  poloniex_api_key1: System.get_env("POLONIEX_API_KEY1") || "${POLONIEX_API_KEY1}",
+  poloniex_api_secret1: System.get_env("POLONIEX_API_SECRET1") || "${POLONIEX_API_SECRET1}",
+
+  DGB: 2,
+  poloniex_api_key2: System.get_env("POLONIEX_API_KEY2") || "${POLONIEX_API_KEY2}",
+  poloniex_api_secret2: System.get_env("POLONIEX_API_SECRET2") || "${POLONIEX_API_SECRET2}",
+
+  XEM: 3,
+  poloniex_api_key3: System.get_env("POLONIEX_API_KEY3") || "${POLONIEX_API_KEY3}",
+  poloniex_api_secret3: System.get_env("POLONIEX_API_SECRET3") || "${POLONIEX_API_SECRET3}"
+
+# Useful when debugging OTP:
 # config :logger, handle_sasl_reports: true
 
 # config :krypto_brain, traders: [

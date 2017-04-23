@@ -1,5 +1,4 @@
 # Problems with current implementation:
-# - Orders are not always filled in, especially when not a lot of people seem to be trading certain altcoin.
 # - Recalculations of trade'able BTC balance after selling altcoin are very naive, possibly can cause problems.
 # - Need a more recent information on the current datasample. Currently it might be delayed even by 5-10 mins.
 # - Getting %{"error" => "Total must be at least 0.0001."} when attempting to make an order
@@ -8,6 +7,9 @@
 # - Nonce collisions with multiple workers
 # - Need to manually kill Python instances after crash, or memory will run out
 
+# CURRENT FOCUS:
+# - Orders are not always filled in, especially when not a lot of people seem to be trading certain altcoin.
+
 defmodule KryptoBrain.Trading.Trader do
   alias KryptoBrain.Constants, as: C
   alias KryptoBrain.Trading.Requests
@@ -15,27 +17,27 @@ defmodule KryptoBrain.Trading.Trader do
   require Logger
   use GenServer
 
-  def start_link(alt_symbol, btc_balance, currency_owned \\ C._BTC) do
-    GenServer.start_link(__MODULE__, [alt_symbol, btc_balance, currency_owned], name: String.to_atom(alt_symbol))
+  def start_link(alt_symbol, currency_owned \\ C._BTC) do
+    GenServer.start_link(__MODULE__, [alt_symbol, currency_owned], name: String.to_atom(alt_symbol))
   end
 
-  def init([alt_symbol, btc_balance, currency_owned]) do
+  def init([alt_symbol, currency_owned]) do
     schedule_work()
 
-    state = case :ets.lookup(:trading_state_holder, alt_symbol) do
-      [{^alt_symbol, previous_state}] ->
-        Logger.info("Trader #{alt_symbol} started, restoring backed-up state: #{inspect(previous_state)}")
-        previous_state
-      [] ->
+    # state = case :ets.lookup(:trading_state_holder, alt_symbol) do
+      # [{^alt_symbol, previous_state}] ->
+        # Logger.info("Trader #{alt_symbol} started, restoring backed-up state: #{inspect(previous_state)}")
+        # previous_state
+      # [] ->
         Logger.info("Trader #{alt_symbol} started, starting with initial state")
-        %{
+        state = %{
           alt_symbol: alt_symbol,
-          btc_balance: btc_balance,
-          alt_balance: 0.0,
+          btc_balance: nil,
+          alt_balance: nil,
           currency_owned: currency_owned,
           most_recent_alt_price: nil
         }
-    end
+    # end
 
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
     {:ok, state}
@@ -50,27 +52,28 @@ defmodule KryptoBrain.Trading.Trader do
     {:noreply, state}
   end
 
-  def terminate(_reason, state) do
-    :ets.insert(:trading_state_holder, {state[:alt_symbol], state})
-    :ok
-  end
+  # def terminate(_reason, state) do
+    # :ets.insert(:trading_state_holder, {state[:alt_symbol], state})
+    # :ok
+  # end
 
   defp refresh_balances(state) do
-    refresh_balances_response = Requests.refresh_balances()
+    refresh_balances_response = Requests.refresh_balances(state[:alt_symbol])
 
     case refresh_balances_response do
       %{"error" => error} -> raise error
       _ -> nil
     end
 
+    {btc_balance, ""} = refresh_balances_response[C._BTC] |> Float.parse
     {alt_balance, ""} = refresh_balances_response[state[:alt_symbol]] |> Float.parse
 
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
     state = state
-    |> Map.update!(:btc_balance, fn(_) -> if state[:currency_owned] == C._BTC, do: state[:btc_balance], else: 0.0 end)
-    |> Map.update!(:alt_balance, fn(_) -> alt_balance end)
-    # |> Map.update!(:currency_owned, fn(_) -> C._ALT end)
+            |> Map.update!(:btc_balance, fn(_) -> btc_balance end)
+            |> Map.update!(:alt_balance, fn(_) -> alt_balance end)
+            |> Map.update!(:currency_owned, fn(_) -> if btc_balance >= alt_balance, do: C._BTC, else: C._ALT end)
 
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
     state
@@ -104,7 +107,7 @@ defmodule KryptoBrain.Trading.Trader do
         # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
         # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
-        # if !Enum.empty?(sell_orders), do: true = cancel_orders(sell_orders)
+        # if !Enum.empty?(sell_orders), do: true = cancel_orders(sell_orders, state[:alt_symbol])
         # if Enum.empty?(buy_orders) && state[:currency_owned] == C._BTC, do: state = place_buy_order(state)
         if state[:currency_owned] == C._BTC, do: state = place_buy_order(state)
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
@@ -117,7 +120,7 @@ defmodule KryptoBrain.Trading.Trader do
         # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
         # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
-        # if !Enum.empty?(buy_orders), do: true = cancel_orders(buy_orders)
+        # if !Enum.empty?(buy_orders), do: true = cancel_orders(buy_orders, state[:alt_symbol])
         # if Enum.empty?(sell_orders) && state[:currency_owned] == C._ALT, do: state = place_sell_order(state)
         if state[:currency_owned] == C._ALT, do: state = place_sell_order(state)
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
@@ -139,7 +142,7 @@ defmodule KryptoBrain.Trading.Trader do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
         state = state
                 |> refresh_balances()
-                |> Map.update!(:btc_balance, fn(_) -> 0.0 end)
+                # |> Map.update!(:btc_balance, fn(_) -> 0.0 end)
                 |> Map.update!(:currency_owned, fn(_) -> C._ALT end)
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
       %{"error" => "Unable to fill order completely."} ->
@@ -160,25 +163,29 @@ defmodule KryptoBrain.Trading.Trader do
 
     case place_sell_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        btc_amount_after_trade = state[:alt_balance] * state[:most_recent_alt_price]
-        trade_fee = btc_amount_after_trade * 0.0025 # taker fee
-        btc_amount_after_trade = btc_amount_after_trade - trade_fee
+        # btc_amount_after_trade = state[:alt_balance] * state[:most_recent_alt_price]
+        # trade_fee = btc_amount_after_trade * 0.0025 # taker fee
+        # btc_amount_after_trade = btc_amount_after_trade - trade_fee
 
         state = state
-                |> Map.update!(:btc_balance, fn(_) -> btc_amount_after_trade end)
-                |> Map.update!(:alt_balance, fn(_) -> 0.0 end)
+                |> refresh_balances()
+                # |> Map.update!(:btc_balance, fn(_) -> btc_amount_after_trade end)
+                # |> Map.update!(:alt_balance, fn(_) -> 0.0 end)
                 |> Map.update!(:currency_owned, fn(_) -> C._BTC end)
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
       %{"error" => "Unable to fill order completely."} ->
         Logger.warn("Attempted to sell #{state[:alt_symbol]} but could not fill the order")
+      %{"error" => "Total must be at least 0.0001."}
+        Logger.error("Total must be at least 0.0001.")
+        Logger.error(state)
     end
 
     state
   end
 
-  defp cancel_orders(orders) do
+  defp cancel_orders(orders, alt_symbol) do
     Enum.each orders, fn(order) ->
-      %{"success" => 1} = Requests.cancel_order(order)
+      %{"success" => 1} = Requests.cancel_order(order, alt_symbol)
       Logger.info("Order #{order["orderNumber"]} cancelled.")
     end
 

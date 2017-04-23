@@ -10,13 +10,13 @@ defmodule KryptoBrain.Application do
 
     children = [
       # supervisor(KryptoBrain.Repo, []),
-      worker(KryptoBrain.Trading.StateHolder, []),
-      worker(KryptoBrain.Trading.NonceGenerator, []),
+      # worker(KryptoBrain.Trading.StateHolder, []),
+      # worker(KryptoBrain.Trading.NonceGenerator, []),
 
-      worker(KryptoBrain.Trading.Trader, ["DGB", 0.0, C._ALT], id: "DGB"),
-      worker(KryptoBrain.Trading.Trader, ["XEM", 0.0, C._ALT], id: "XEM"),
-      worker(KryptoBrain.Trading.Trader, ["MAID", 0.0, C._ALT], id: "MAID"),
-      worker(KryptoBrain.Trading.Trader, ["PINK", 0.01174268, C._BTC], id: "PINK")
+      worker(KryptoBrain.Trading.Trader, ["DGB"], id: "DGB"),
+      worker(KryptoBrain.Trading.Trader, ["XEM"], id: "XEM"),
+      worker(KryptoBrain.Trading.Trader, ["MAID"], id: "MAID"),
+      worker(KryptoBrain.Trading.Trader, ["PINK"], id: "PINK")
     ]
 
     opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor, max_seconds: 100, max_restarts: 100]
