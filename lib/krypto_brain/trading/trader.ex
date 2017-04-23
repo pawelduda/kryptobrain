@@ -171,9 +171,9 @@ defmodule KryptoBrain.Trading.Trader do
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
       %{"error" => "Unable to fill order completely."} ->
         Logger.warn("Attempted to sell #{state[:alt_symbol]} but could not fill the order")
-      %{"error" => "Total must be at least 0.0001."}
+      %{"error" => "Total must be at least 0.0001."} ->
         Logger.error("Total must be at least 0.0001.")
-        Logger.error(state)
+        Logger.error(inspect(state))
     end
 
     state
