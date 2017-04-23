@@ -1,10 +1,6 @@
 # Problems with current implementation:
-# - Recalculations of trade'able BTC balance after selling altcoin are very naive, possibly can cause problems.
 # - Need a more recent information on the current datasample. Currently it might be delayed even by 5-10 mins.
-# - Getting %{"error" => "Total must be at least 0.0001."} when attempting to make an order
-# - When we own more altcoin than 0, Trader assumes that we want to sell it, add an option to bypass
 # - Kinda high memory/CPU usage with multiple workers (probably due to multiple Python instances)
-# - Nonce collisions with multiple workers
 # - Need to manually kill Python instances after crash, or memory will run out
 
 # CURRENT FOCUS:
