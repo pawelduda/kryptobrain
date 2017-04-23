@@ -15,6 +15,8 @@ config :krypto_brain, KryptoBrain.Trading.Trader,
   poloniex_api_key: System.get_env("POLONIEX_API_KEY") || "${POLONIEX_API_KEY}",
   poloniex_api_secret: System.get_env("POLONIEX_API_SECRET") || "${POLONIEX_API_SECRET}"
 
+# config :logger, handle_sasl_reports: true
+
 # config :krypto_brain, traders: [
 #   [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
   # [currency_pair: "BTC_LTC", start_btc_balance: 0.008],
