@@ -26,7 +26,7 @@ defmodule KryptoBrain.Trading.Requests do
       currencyPair: "BTC_#{alt_symbol}",
       rate: most_recent_alt_price,
       amount: amount,
-      fillOrKill: 1,
+      postOnly: 1,
       nonce: nonce()
     }
     encoded_post_data = post_data |> URI.encode_query
@@ -52,7 +52,7 @@ defmodule KryptoBrain.Trading.Requests do
       currencyPair: "BTC_#{alt_symbol}",
       rate: most_recent_alt_price,
       amount: alt_balance,
-      fillOrKill: 1,
+      postOnly: 1,
       nonce: nonce()
     }
     encoded_post_data = post_data |> URI.encode_query

@@ -37,7 +37,8 @@ defmodule KryptoBrain.Mixfile do
       {:ecto, "~> 2.1"},
       {:export, "~> 0.1.0"},
       {:calendar, "~> 0.16.1"},
-      {:timex, "~> 3.0"}
+      {:timex, "~> 3.0"},
+      {:logger_file_backend, "0.0.4"}
     ]
   end
 end

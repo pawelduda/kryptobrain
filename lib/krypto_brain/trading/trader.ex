@@ -1,10 +1,13 @@
 # Problems with current implementation:
-# - Need a more recent information on the current datasample. Currently it might be delayed even by 5-10 mins.
 # - Kinda high memory/CPU usage with multiple workers (probably due to multiple Python instances)
-# - Need to manually kill Python instances after crash, or memory will run out
 
 # CURRENT FOCUS:
+# - Need a more recent information on the current datasample. Currently it might be delayed even by 5-10 mins.
+# Last time I checked, returnChartData endpoint is usually delayed by 2.5 mins
+
+# PARTIALLY RESOLVED:
 # - Orders are not always filled in, especially when not a lot of people seem to be trading certain altcoin.
+# Fixed by relying on lowest ask or highest bid.
 
 defmodule KryptoBrain.Trading.Trader do
   alias KryptoBrain.Constants, as: C
@@ -30,8 +33,8 @@ defmodule KryptoBrain.Trading.Trader do
           alt_symbol: alt_symbol,
           btc_balance: nil,
           alt_balance: nil,
-          currency_owned: currency_owned,
-          most_recent_alt_price: nil
+          currency_owned: currency_owned
+          # most_recent_alt_price: nil
         }
     # end
 
@@ -64,69 +67,92 @@ defmodule KryptoBrain.Trading.Trader do
     {btc_balance, ""} = refresh_balances_response[C._BTC] |> Float.parse
     {alt_balance, ""} = refresh_balances_response[state[:alt_symbol]] |> Float.parse
 
+    orders = Requests.get_open_orders(state[:alt_symbol])
+    buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
+    sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
+
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
     state = state
             |> Map.update!(:btc_balance, fn(_) -> btc_balance end)
             |> Map.update!(:alt_balance, fn(_) -> alt_balance end)
-            |> Map.update!(:currency_owned, fn(_) -> if btc_balance >= alt_balance, do: C._BTC, else: C._ALT end)
+            |> Map.update!(:currency_owned, fn(_) ->
+                 cond do
+                   btc_balance >= alt_balance || !Enum.empty?(buy_orders)  -> C._BTC
+                   btc_balance  < alt_balance || !Enum.empty?(sell_orders) -> C._ALT
+                 end
+               end)
 
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
     state
   end
 
   defp trade_loop(state) do
-    {prediction, most_recent_alt_price} = KryptoBrain.Bridge.KryptoJanusz.most_recent_prediction(state[:alt_symbol])
-    state = state |> Map.update!(:most_recent_alt_price, fn(_) -> most_recent_alt_price end)
+    # {prediction, _most_recent_alt_price} = KryptoBrain.Bridge.KryptoJanusz.most_recent_prediction(state[:alt_symbol])
+    prediction = KryptoBrain.Bridge.KryptoJanusz.most_recent_prediction(state[:alt_symbol])
+    # state = state |> Map.update!(:most_recent_alt_price, fn(_) -> most_recent_alt_price end)
     Logger.debug("#{__ENV__.line}: #{inspect(state)}")
 
     prediction_str = case prediction do
-      1 ->
+      C._BUY ->
         case state[:currency_owned] do
-          C._BTC -> "#{IO.ANSI.green}BUY"
-          C._ALT -> "#{IO.ANSI.blue}BUY (already bought)"
+          C._BTC -> "#{IO.ANSI.green}⬆️ BUY"
+          C._ALT -> "#{IO.ANSI.blue}⬆️ BUY (already bought)"
         end
-      0 ->
+      C._HOLD ->
         "#{IO.ANSI.blue}HOLD"
-      -1 ->
+      C._SELL ->
         case state[:currency_owned] do
-          C._BTC -> "#{IO.ANSI.blue}SELL (already sold)"
-          C._ALT -> "#{IO.ANSI.red}SELL"
+          C._BTC -> "#{IO.ANSI.blue}⬇️ SELL (already sold)"
+          C._ALT -> "#{IO.ANSI.red}⬇️ SELL"
         end
     end
-
     Logger.info("Predicted action for #{state[:alt_symbol]}: #{prediction_str}")
 
     state = case prediction do
       C._BUY ->
-        # orders = Requests.get_open_orders(state[:alt_symbol])
-        # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
-        # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
+        orders = Requests.get_open_orders(state[:alt_symbol])
+        buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
+        sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
-        # if !Enum.empty?(sell_orders), do: true = cancel_orders(sell_orders, state[:alt_symbol])
-        # if Enum.empty?(buy_orders) && state[:currency_owned] == C._BTC, do: state = place_buy_order(state)
         if state[:currency_owned] == C._BTC do
-          suggested_trade_price = suggested_trade_price(state[:alt_symbol], :buy)
-          state = place_buy_order(state, suggested_trade_price)
-        end
-        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
+          if !Enum.empty?(sell_orders) do
+            true = cancel_orders(sell_orders, state[:alt_symbol])
+            state = refresh_balances(state)
+          end
+          if Enum.empty?(buy_orders) do
+            suggested_trade_price = suggested_trade_price(state[:alt_symbol])
+            state = place_buy_order(state, suggested_trade_price)
+          end
 
+          state
+        end
+
+        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
         state
+
       C._HOLD ->
         state
+
       C._SELL ->
-        # orders = Requests.get_open_orders(state[:alt_symbol])
-        # buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
-        # sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
+        orders = Requests.get_open_orders(state[:alt_symbol])
+        buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
+        sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
 
-        # if !Enum.empty?(buy_orders), do: true = cancel_orders(buy_orders, state[:alt_symbol])
-        # if Enum.empty?(sell_orders) && state[:currency_owned] == C._ALT, do: state = place_sell_order(state)
         if state[:currency_owned] == C._ALT do
-          suggested_trade_price = suggested_trade_price(state[:alt_symbol], :sell)
-          state = place_sell_order(state, suggested_trade_price)
-        end
-        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
+          if !Enum.empty?(buy_orders) do
+            true = cancel_orders(buy_orders, state[:alt_symbol])
+            state = refresh_balances(state)
+          end
+          if Enum.empty?(sell_orders) do
+            suggested_trade_price = suggested_trade_price(state[:alt_symbol])
+            state = place_sell_order(state, suggested_trade_price)
+          end
 
+          state
+        end
+
+        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
         state
     end
 
@@ -143,7 +169,7 @@ defmodule KryptoBrain.Trading.Trader do
     case place_buy_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
         state = state
-                |> refresh_balances()
+                # |> refresh_balances()
                 # |> Map.update!(:btc_balance, fn(_) -> 0.0 end)
                 |> Map.update!(:currency_owned, fn(_) -> C._ALT end)
         Logger.debug("#{__ENV__.line}: #{inspect(state)}")
@@ -170,7 +196,7 @@ defmodule KryptoBrain.Trading.Trader do
         # btc_amount_after_trade = btc_amount_after_trade - trade_fee
 
         state = state
-                |> refresh_balances()
+                # |> refresh_balances()
                 # |> Map.update!(:btc_balance, fn(_) -> btc_amount_after_trade end)
                 # |> Map.update!(:alt_balance, fn(_) -> 0.0 end)
                 |> Map.update!(:currency_owned, fn(_) -> C._BTC end)
@@ -194,18 +220,22 @@ defmodule KryptoBrain.Trading.Trader do
     true
   end
 
-  defp suggested_trade_price(alt_symbol, buy_or_sell) do
+  # defp suggested_trade_price(alt_symbol, buy_or_sell) do
+  defp suggested_trade_price(alt_symbol) do
     ticker_data_response = Requests.get_ticker_data
                            |> Enum.find(fn(currency_data) -> elem(currency_data, 0) === "BTC_#{alt_symbol}" end)
                            |> elem(1)
 
-    case buy_or_sell do
-      :buy  ->
-        {lowest_ask, ""} = Map.fetch!(ticker_data_response, "lowestAsk") |> Float.parse
-        lowest_ask
-      :sell ->
-        {highest_bid, ""} = Map.fetch!(ticker_data_response, "highestBid") |> Float.parse
-        highest_bid
-    end
+    # case buy_or_sell do
+      # :buy  ->
+        # {lowest_ask, ""} = Map.fetch!(ticker_data_response, "lowestAsk") |> Float.parse
+        # lowest_ask
+      # :sell ->
+        # {highest_bid, ""} = Map.fetch!(ticker_data_response, "highestBid") |> Float.parse
+        # highest_bid
+    # end
+
+    {last, ""} = Map.fetch!(ticker_data_response, "last") |> Float.parse
+    last
   end
 end

@@ -14,9 +14,9 @@ defmodule KryptoBrain.Application do
       # worker(KryptoBrain.Trading.NonceGenerator, []),
 
       worker(KryptoBrain.Trading.Trader, ["DGB"], id: "DGB"),
-      worker(KryptoBrain.Trading.Trader, ["XEM"], id: "XEM"),
-      worker(KryptoBrain.Trading.Trader, ["MAID"], id: "MAID"),
-      worker(KryptoBrain.Trading.Trader, ["PINK"], id: "PINK")
+      worker(KryptoBrain.Trading.Trader, ["ETH"], id: "ETH"),
+      worker(KryptoBrain.Trading.Trader, ["DOGE"], id: "DOGE"),
+      worker(KryptoBrain.Trading.Trader, ["VIA"], id: "VIA")
     ]
 
     opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor, max_seconds: 100, max_restarts: 100]

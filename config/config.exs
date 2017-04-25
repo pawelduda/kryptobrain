@@ -12,11 +12,11 @@ config :krypto_brain, KryptoBrain.Repo,
 config :krypto_brain, ecto_repos: [KryptoBrain.Repo]
 
 config :krypto_brain, KryptoBrain.Trading.Requests,
-  MAID: 0,
+  DOGE: 0,
   poloniex_api_key0: System.get_env("POLONIEX_API_KEY0") || "${POLONIEX_API_KEY0}",
   poloniex_api_secret0: System.get_env("POLONIEX_API_SECRET0") || "${POLONIEX_API_SECRET0}",
 
-  PINK: 1,
+  VIA: 1,
   poloniex_api_key1: System.get_env("POLONIEX_API_KEY1") || "${POLONIEX_API_KEY1}",
   poloniex_api_secret1: System.get_env("POLONIEX_API_SECRET1") || "${POLONIEX_API_SECRET1}",
 
@@ -24,12 +24,18 @@ config :krypto_brain, KryptoBrain.Trading.Requests,
   poloniex_api_key2: System.get_env("POLONIEX_API_KEY2") || "${POLONIEX_API_KEY2}",
   poloniex_api_secret2: System.get_env("POLONIEX_API_SECRET2") || "${POLONIEX_API_SECRET2}",
 
-  XEM: 3,
+  ETH: 3,
   poloniex_api_key3: System.get_env("POLONIEX_API_KEY3") || "${POLONIEX_API_KEY3}",
   poloniex_api_secret3: System.get_env("POLONIEX_API_SECRET3") || "${POLONIEX_API_SECRET3}"
 
 # Useful when debugging OTP:
 # config :logger, handle_sasl_reports: true
+config :logger, format: "[$level] $message\n",
+  backends: [{LoggerFileBackend, :error_log}, :console]
+
+config :logger, :error_log,
+  path: "log/error.log",
+  level: :error
 
 # config :krypto_brain, traders: [
 #   [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
