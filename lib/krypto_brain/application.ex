@@ -13,10 +13,10 @@ defmodule KryptoBrain.Application do
       # worker(KryptoBrain.Trading.StateHolder, []),
       # worker(KryptoBrain.Trading.NonceGenerator, []),
 
-      worker(KryptoBrain.Trading.Trader, ["PINK"], id: "PINK"),
-      worker(KryptoBrain.Trading.Trader, ["EMC2"], id: "EMC2"),
-      worker(KryptoBrain.Trading.Trader, ["GNT"], id: "GNT"),
-      worker(KryptoBrain.Trading.Trader, ["BCN"], id: "BCN")
+      worker(KryptoBrain.Trading.Trader, ["PINK"], id: "trader_1"),
+      worker(KryptoBrain.Trading.Trader, ["EMC2"], id: "trader_2"),
+      worker(KryptoBrain.Trading.Trader, ["GNT"], id: "trader_3"),
+      worker(KryptoBrain.Trading.Trader, ["BCN"], id: "trader_4")
     ]
 
     opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor, max_seconds: 100, max_restarts: 100]

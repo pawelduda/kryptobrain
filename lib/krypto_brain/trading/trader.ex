@@ -17,7 +17,7 @@ defmodule KryptoBrain.Trading.Trader do
   use GenServer
 
   def start_link(alt_symbol, currency_owned \\ C._BTC) do
-    GenServer.start_link(__MODULE__, [alt_symbol], name: String.to_atom(alt_symbol))
+    GenServer.start_link(__MODULE__, [alt_symbol], name: String.to_atom("#{alt_symbol}_trader"))
   end
 
   def init([alt_symbol]) do
