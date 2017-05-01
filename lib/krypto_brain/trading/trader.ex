@@ -23,7 +23,7 @@ defmodule KryptoBrain.Trading.Trader do
   def init([alt_symbol]) do
     schedule_work()
 
-    Logger.info("Trader #{alt_symbol} started, starting with initial state")
+    Logger.info(fn -> "Trader #{alt_symbol} started, starting with initial state" end)
     state = %{
       alt_symbol: alt_symbol,
       btc_balance: nil,
@@ -110,7 +110,7 @@ defmodule KryptoBrain.Trading.Trader do
     case state[:prediction] do
       prediction when prediction in [C._BUY, C._SELL] ->
         Logger.debug(inspect(state))
-        Logger.info("Predicted action for #{state[:alt_symbol]}: #{prediction_str}")
+        Logger.info(fn -> "Predicted action for #{state[:alt_symbol]}: #{prediction_str}" end)
       _ ->
         nil
     end
@@ -179,9 +179,9 @@ defmodule KryptoBrain.Trading.Trader do
 
     case place_buy_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
+        Logger.debug(fn -> "#{__ENV__.line}: #{inspect(state)}" end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn("Attempted to buy #{state[:alt_symbol]} but could not fill the order.")
+        Logger.warn(fn -> "Attempted to buy #{state[:alt_symbol]} but could not fill the order." end)
     end
 
     state
@@ -193,9 +193,9 @@ defmodule KryptoBrain.Trading.Trader do
 
     case place_sell_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.debug("#{__ENV__.line}: #{inspect(state)}")
+        Logger.debug(fn -> "#{__ENV__.line}: #{inspect(state)}" end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn("Attempted to sell #{state[:alt_symbol]} but could not fill the order")
+        Logger.warn(fn -> "Attempted to sell #{state[:alt_symbol]} but could not fill the order" end)
       %{"error" => "Total must be at least 0.0001."} ->
         Logger.error("Total must be at least 0.0001.")
         Logger.error(inspect(state))
@@ -207,7 +207,7 @@ defmodule KryptoBrain.Trading.Trader do
   defp cancel_orders(orders, alt_symbol) do
     Enum.each orders, fn(order) ->
       %{"success" => 1} = Requests.cancel_order(order, alt_symbol)
-      Logger.info("Order #{order["orderNumber"]} cancelled.")
+      Logger.info(fn -> "Order #{order["orderNumber"]} cancelled." end)
     end
 
     true
