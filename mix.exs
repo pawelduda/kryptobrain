@@ -31,7 +31,7 @@ defmodule KryptoBrain.Mixfile do
   defp deps do
     [
       {:spell, github: "Zatvobor/spell", ref: "5f055dcc4b8b15c55dbc6f1f20c54fc4ebfbfe25"},
-      {:httpoison, "~> 0.11.1"},
+      {:httpoison, "~> 0.11.2"},
       {:poison, "~> 3.0", override: true},
       {:postgrex, ">= 0.0.0"},
       {:ecto, "~> 2.1"},

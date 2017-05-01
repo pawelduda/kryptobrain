@@ -1,5 +1,5 @@
 defmodule KryptoBrain.Trading.Requests do
-  def refresh_balances(alt_symbol) do
+  def get_balances(alt_symbol) do
     post_data = %{command: "returnBalances", nonce: nonce()}
     encoded_post_data = post_data |> URI.encode_query
     sign = :crypto.hmac(
@@ -13,7 +13,8 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ]
+      ],
+      hackney: [pool: alt_symbol]
     )
     Poison.decode!(response_body)
   end
@@ -26,7 +27,6 @@ defmodule KryptoBrain.Trading.Requests do
       currencyPair: "BTC_#{alt_symbol}",
       rate: most_recent_alt_price,
       amount: amount,
-      postOnly: 1,
       nonce: nonce()
     }
     encoded_post_data = post_data |> URI.encode_query
@@ -41,7 +41,8 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ]
+      ],
+      hackney: [pool: alt_symbol]
     )
     Poison.decode!(response_body)
   end
@@ -52,7 +53,6 @@ defmodule KryptoBrain.Trading.Requests do
       currencyPair: "BTC_#{alt_symbol}",
       rate: most_recent_alt_price,
       amount: alt_balance,
-      postOnly: 1,
       nonce: nonce()
     }
     encoded_post_data = post_data |> URI.encode_query
@@ -67,7 +67,8 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ]
+      ],
+      hackney: [pool: alt_symbol]
     )
     Poison.decode!(response_body)
   end
@@ -90,7 +91,8 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ]
+      ],
+      hackney: [pool: alt_symbol]
     )
     Poison.decode!(response_body)
   end
@@ -113,7 +115,8 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ]
+      ],
+      hackney: [pool: alt_symbol]
     )
     Poison.decode!(response_body)
   end
