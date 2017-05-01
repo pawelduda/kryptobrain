@@ -13,8 +13,7 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ],
-      hackney: [pool: alt_symbol]
+      ]
     )
     Poison.decode!(response_body)
   end
@@ -41,8 +40,7 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ],
-      hackney: [pool: alt_symbol]
+      ]
     )
     Poison.decode!(response_body)
   end
@@ -67,8 +65,7 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ],
-      hackney: [pool: alt_symbol]
+      ]
     )
     Poison.decode!(response_body)
   end
@@ -91,8 +88,7 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ],
-      hackney: [pool: alt_symbol]
+      ]
     )
     Poison.decode!(response_body)
   end
@@ -115,8 +111,7 @@ defmodule KryptoBrain.Trading.Requests do
         {"Content-Type", "application/x-www-form-urlencoded"},
         {"Key", map_altcoin_symbol_to_api_key(alt_symbol)},
         {"Sign", sign}
-      ],
-      hackney: [pool: alt_symbol]
+      ]
     )
     Poison.decode!(response_body)
   end
