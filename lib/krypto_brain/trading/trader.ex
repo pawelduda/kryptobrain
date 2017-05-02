@@ -11,7 +11,7 @@
 
 defmodule KryptoBrain.Trading.Trader do
   alias KryptoBrain.Constants, as: C
-  alias KryptoBrain.Trading.Requests
+  alias KryptoBrain.Trading.PoloniexApi
   require KryptoBrain.Constants
   require Logger
   use GenServer
@@ -57,7 +57,7 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp update_balances(state) do
-    refresh_balances_response = Requests.get_balances(state[:alt_symbol])
+    refresh_balances_response = PoloniexApi.get_balances(state[:alt_symbol])
 
     case refresh_balances_response do
       %{"error" => error} -> raise error
@@ -74,7 +74,7 @@ defmodule KryptoBrain.Trading.Trader do
 
   defp update_suggested_trade_price(state) do
     ticker_data_response =
-      Requests.get_ticker_data
+      PoloniexApi.get_ticker_data
       |> Enum.find(fn(currency_data) -> elem(currency_data, 0) === "BTC_#{state[:alt_symbol]}" end)
       |> elem(1)
 
@@ -84,7 +84,7 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp update_open_orders(state) do
-    orders = Requests.get_open_orders(state[:alt_symbol])
+    orders = PoloniexApi.get_open_orders(state[:alt_symbol])
 
     buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
     sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
@@ -174,7 +174,7 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp place_buy_order(state) do
-    place_buy_order_response = Requests.place_buy_order(state[:suggested_trade_price], state[:btc_balance], state[:alt_symbol])
+    place_buy_order_response = PoloniexApi.place_buy_order(state[:suggested_trade_price], state[:btc_balance], state[:alt_symbol])
     Logger.info(inspect(place_buy_order_response))
 
     case place_buy_order_response do
@@ -188,7 +188,7 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp place_sell_order(state) do
-    place_sell_order_response = Requests.place_sell_order(state[:suggested_trade_price], state[:alt_balance], state[:alt_symbol])
+    place_sell_order_response = PoloniexApi.place_sell_order(state[:suggested_trade_price], state[:alt_balance], state[:alt_symbol])
     Logger.info(inspect(place_sell_order_response))
 
     case place_sell_order_response do
@@ -206,7 +206,7 @@ defmodule KryptoBrain.Trading.Trader do
 
   defp cancel_orders(orders, alt_symbol) do
     Enum.each orders, fn(order) ->
-      %{"success" => 1} = Requests.cancel_order(order, alt_symbol)
+      %{"success" => 1} = PoloniexApi.cancel_order(order, alt_symbol)
       Logger.info(fn -> "Order #{order["orderNumber"]} cancelled." end)
     end
 

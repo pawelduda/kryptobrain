@@ -11,7 +11,7 @@ config :krypto_brain, KryptoBrain.Repo,
 
 config :krypto_brain, ecto_repos: [KryptoBrain.Repo]
 
-config :krypto_brain, KryptoBrain.Trading.Requests,
+config :krypto_brain, KryptoBrain.Trading.PoloniexApi,
   PINK: 0,
   # pawel.duda91
   poloniex_api_key0: System.get_env("POLONIEX_API_KEY0") || "${POLONIEX_API_KEY0}",

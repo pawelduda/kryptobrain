@@ -1,4 +1,4 @@
-defmodule KryptoBrain.Trading.Requests do
+defmodule KryptoBrain.Trading.PoloniexApi do
   def get_balances(alt_symbol) do
     post_data = %{command: "returnBalances", nonce: nonce()}
     trading_api_post_response(alt_symbol, post_data)
