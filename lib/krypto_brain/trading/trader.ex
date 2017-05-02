@@ -21,10 +21,11 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   def init([alt_symbol]) do
-    schedule_work()
+    {:ok, python_bridge_pid} =
+      GenServer.start_link(KryptoBrain.Bridge.KryptoJanusz, [], name: String.to_atom("#{alt_symbol}_python_bridge"))
 
-    Logger.info(fn -> "Trader #{alt_symbol} started, starting with initial state" end)
     state = %{
+      python_bridge_pid: python_bridge_pid,
       alt_symbol: alt_symbol,
       btc_balance: nil,
       alt_balance: nil,
@@ -34,6 +35,10 @@ defmodule KryptoBrain.Trading.Trader do
       sell_orders: []
       # currency_owned: currency_owned
     }
+
+    Logger.info(fn -> "Trader #{alt_symbol} started, starting with initial state" end)
+
+    schedule_work()
 
     {:ok, state}
   end
@@ -94,9 +99,12 @@ defmodule KryptoBrain.Trading.Trader do
     |> Map.update!(:sell_orders, fn(_) -> sell_orders end)
   end
 
-  defp update_prediction(state) do
-    prediction = KryptoBrain.Bridge.KryptoJanusz.most_recent_prediction(state[:alt_symbol])
-    state |> Map.update!(:prediction, fn(_) -> prediction end)
+  defp update_prediction(%{python_bridge_pid: python_bridge_pid, alt_symbol: alt_symbol} = state) do
+    state |> Map.update!(:prediction, fn(_) -> get_prediction(python_bridge_pid, alt_symbol) end)
+  end
+
+  defp get_prediction(python_bridge_pid, alt_symbol) do
+    GenServer.call(python_bridge_pid, {:most_recent_prediction, alt_symbol}, 15_000)
   end
 
   defp print_status_message(state) do

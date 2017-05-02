@@ -12,7 +12,7 @@ defmodule KryptoBrain.Application do
       # supervisor(KryptoBrain.Repo, []),
       # worker(KryptoBrain.Trading.StateHolder, []),
       # worker(KryptoBrain.Trading.NonceGenerator, []),
-      worker(KryptoBrain.Bridge.KryptoJanusz, []),
+      # worker(KryptoBrain.Bridge.KryptoJanusz, []),
 
       worker(KryptoBrain.Trading.Trader, ["PINK"], id: "trader_1"),
       worker(KryptoBrain.Trading.Trader, ["EMC2"], id: "trader_2"),

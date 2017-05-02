@@ -41,14 +41,6 @@ config :logger, :error_log,
   path: "log/error.log",
   level: :error
 
-# config :krypto_brain, traders: [
-#   [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
-  # [currency_pair: "BTC_LTC", start_btc_balance: 0.008],
-  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
-  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008],
-  # [currency_pair: "BTC_ETH", start_btc_balance: 0.008]
-# ]
-
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
 # file won't be loaded nor affect the parent project. For this reason,

@@ -13,10 +13,6 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
     {:ok, _python} = Python.start(python_path: Path.expand(@predict_script_path))
   end
 
-  def most_recent_prediction(alt_symbol) do
-    GenServer.call(__MODULE__, {:most_recent_prediction, alt_symbol}, 15_000)
-  end
-
   def handle_call({:most_recent_prediction, alt_symbol}, _from, python) do
     ten_days_ago_gmt_timestamp =
       Calendar.DateTime.now!("GMT")
