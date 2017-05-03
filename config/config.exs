@@ -33,13 +33,30 @@ config :krypto_brain, KryptoBrain.Trading.PoloniexApi,
   poloniex_api_secret3: System.get_env("POLONIEX_API_SECRET3") || "${POLONIEX_API_SECRET3}"
 
 # Useful when debugging OTP:
-config :logger, handle_sasl_reports: true
-config :logger, format: "[$level] $message\n",
-  backends: [{LoggerFileBackend, :error_log}, :console]
+# config :logger, handle_sasl_reports: true
 
-config :logger, :error_log,
-  path: "log/error.log",
+config :logger,
+  # format: "[$level] $message\n",
+  backends: [
+    {LoggerFileBackend, :log},
+    :console
+  ]
+
+config :logger, :log,
+  path: "log/log.log",
+  level: :info
+
+config :logger, :log,
+  path: "log/log.log",
+  level: :warn
+
+config :logger, :log,
+  path: "log/log.log",
   level: :error
+
+config :logger, :log,
+  path: "log/log.log",
+  level: :debug
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this

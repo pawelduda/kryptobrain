@@ -36,7 +36,7 @@ defmodule KryptoBrain.Trading.Trader do
       # currency_owned: currency_owned
     }
 
-    Logger.info(fn -> "Trader #{alt_symbol} started, starting with initial state" end)
+    Logger.info(fn -> "[#{alt_symbol}] Trader started with initial state." end)
 
     schedule_work()
 
@@ -113,8 +113,8 @@ defmodule KryptoBrain.Trading.Trader do
     # For now we do not print anything if the prediction is hold as it does not bring too much to the table
     # case state[:prediction] do
       # prediction when prediction in [C._BUY, C._SELL] ->
-        Logger.debug(inspect(state))
-        Logger.info(fn -> "Predicted action for #{alt_symbol}: #{prediction_str}" end)
+        Logger.debug(fn -> "[#{alt_symbol}] #{inspect(state)}" end)
+        Logger.info(fn -> "[#{alt_symbol}] Predicted action: #{prediction_str}" end)
       # _ ->
         # nil
     # end
@@ -146,36 +146,36 @@ defmodule KryptoBrain.Trading.Trader do
     case prediction do
       C._BUY ->
         if outdated_open_orders?(buy_orders, suggested_trade_price) do
-          Logger.debug("Got outdated open buy orders, cancelling...")
+          Logger.info(fn -> "[#{alt_symbol}] Got outdated open buy orders, cancelling..." end)
           cancel_orders(buy_orders, alt_symbol)
           # We are not doing anything else here so that loop repeats and we get updated balances
         end
 
         if !Enum.empty?(sell_orders) do
-          Logger.debug("Got open sell orders, cancelling...")
+          Logger.info(fn -> "[#{alt_symbol}] Got open sell orders, cancelling..." end)
           cancel_orders(sell_orders, alt_symbol)
         end
 
         if btc_balance >= 0.0001 do
-          Logger.debug("Got some BTC balance, placing buy order...")
+          Logger.info(fn -> "[#{alt_symbol}] Got some BTC balance, placing buy order..." end)
           place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
         end
       C._HOLD ->
         nil
       C._SELL ->
         if outdated_open_orders?(sell_orders, suggested_trade_price) do
-          Logger.debug("Found outdated open sell orders, cancelling...")
+          Logger.info(fn -> "[#{alt_symbol}] Found outdated open sell orders, cancelling..." end)
           cancel_orders(sell_orders, alt_symbol)
           # We are not doing anything else here so that loop repeats and we get updated balances
         end
 
         if !Enum.empty?(buy_orders) do
-          Logger.debug("Got open buy orders, cancelling...")
+          Logger.info(fn -> "[#{alt_symbol}] Got open buy orders, cancelling..." end)
           cancel_orders(buy_orders, alt_symbol)
         end
 
         if alt_balance >= 0.0001 do
-          Logger.debug("Got some ALT balance, placing sell order...")
+          Logger.info(fn -> "[#{alt_symbol}] Got some ALT balance, placing sell order..." end)
           place_sell_order(suggested_trade_price, alt_balance, alt_symbol)
         end
     end
@@ -192,34 +192,34 @@ defmodule KryptoBrain.Trading.Trader do
 
   defp place_buy_order(suggested_trade_price, btc_balance, alt_symbol) do
     place_buy_order_response = PoloniexApi.place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
-    Logger.info(inspect(place_buy_order_response))
+    Logger.info(fn -> "[#{alt_symbol}] #{inspect(place_buy_order_response)}" end)
 
     case place_buy_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.info(fn -> "Placed buy order for #{alt_symbol}" end)
+        Logger.info(fn -> "[#{alt_symbol}] Placed buy order." end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn(fn -> "Attempted to buy #{alt_symbol} but could not fill the order." end)
+        Logger.warn(fn -> "[#{alt_symbol}] Attempted to buy but could not fill the order." end)
     end
   end
 
   defp place_sell_order(suggested_trade_price, alt_balance, alt_symbol) do
     place_sell_order_response = PoloniexApi.place_sell_order(suggested_trade_price, alt_balance, alt_symbol)
-    Logger.info(inspect(place_sell_order_response))
+    Logger.info(fn -> "[#{alt_symbol}] #{inspect(place_sell_order_response)}" end)
 
     case place_sell_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.info(fn -> "Placed sell order for #{alt_symbol}" end)
+        Logger.info(fn -> "[#{alt_symbol}] Placed sell order." end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn(fn -> "Attempted to sell #{alt_symbol} but could not fill the order" end)
+        Logger.warn(fn -> "[#{alt_symbol}] Attempted to sell but could not fill the order" end)
       %{"error" => "Total must be at least 0.0001."} ->
-        Logger.error("Total must be at least 0.0001.")
+        Logger.error(fn -> "[#{alt_symbol}] Total must be at least 0.0001." end)
     end
   end
 
   defp cancel_orders(orders, alt_symbol) do
     Enum.each orders, fn(order) ->
       %{"success" => 1} = PoloniexApi.cancel_order(order, alt_symbol)
-      Logger.info(fn -> "Order #{order["orderNumber"]} cancelled." end)
+      Logger.info(fn -> "[#{alt_symbol}] Order #{order["orderNumber"]} cancelled." end)
     end
 
     true
