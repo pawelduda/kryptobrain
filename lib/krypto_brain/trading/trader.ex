@@ -61,8 +61,8 @@ defmodule KryptoBrain.Trading.Trader do
     |> print_status_message()
   end
 
-  defp update_balances(state) do
-    refresh_balances_response = PoloniexApi.get_balances(state[:alt_symbol])
+  defp update_balances(%{alt_symbol: alt_symbol} = state) do
+    refresh_balances_response = PoloniexApi.get_balances(alt_symbol)
 
     case refresh_balances_response do
       %{"error" => error} -> raise error
@@ -70,17 +70,17 @@ defmodule KryptoBrain.Trading.Trader do
     end
 
     {btc_balance, ""} = refresh_balances_response[C._BTC] |> Float.parse
-    {alt_balance, ""} = refresh_balances_response[state[:alt_symbol]] |> Float.parse
+    {alt_balance, ""} = refresh_balances_response[alt_symbol] |> Float.parse
 
     state
     |> Map.update!(:btc_balance, fn(_) -> btc_balance end)
     |> Map.update!(:alt_balance, fn(_) -> alt_balance end)
   end
 
-  defp update_suggested_trade_price(state) do
+  defp update_suggested_trade_price(%{alt_symbol: alt_symbol} = state) do
     ticker_data_response =
       PoloniexApi.get_ticker_data
-      |> Enum.find(fn(currency_data) -> elem(currency_data, 0) === "BTC_#{state[:alt_symbol]}" end)
+      |> Enum.find(fn(currency_data) -> elem(currency_data, 0) === "BTC_#{alt_symbol}" end)
       |> elem(1)
 
     {last, ""} = Map.fetch!(ticker_data_response, "last") |> Float.parse
@@ -88,8 +88,8 @@ defmodule KryptoBrain.Trading.Trader do
     state |> Map.update!(:suggested_trade_price, fn(_) -> last end)
   end
 
-  defp update_open_orders(state) do
-    orders = PoloniexApi.get_open_orders(state[:alt_symbol])
+  defp update_open_orders(%{alt_symbol: alt_symbol} = state) do
+    orders = PoloniexApi.get_open_orders(alt_symbol)
 
     buy_orders = Enum.filter(orders, fn(order) -> order["type"] == "buy" end)
     sell_orders = Enum.filter(orders, fn(order) -> order["type"] == "sell" end)
@@ -103,71 +103,80 @@ defmodule KryptoBrain.Trading.Trader do
     state |> Map.update!(:prediction, fn(_) -> get_prediction(python_bridge_pid, alt_symbol) end)
   end
 
-  defp get_prediction(python_bridge_pid, alt_symbol) do
-    GenServer.call(python_bridge_pid, {:most_recent_prediction, alt_symbol}, 15_000)
-  end
-
-  defp print_status_message(state) do
-    prediction_str = case state[:prediction] do
+  defp print_status_message(%{prediction: prediction, alt_symbol: alt_symbol} = state) do
+    prediction_str = case prediction do
       C._BUY -> "#{IO.ANSI.green}⬆️ BUY"
       C._HOLD -> "#{IO.ANSI.blue}HOLD"
       C._SELL -> "#{IO.ANSI.red}⬇️ SELL"
     end
 
     # For now we do not print anything if the prediction is hold as it does not bring too much to the table
-    case state[:prediction] do
-      prediction when prediction in [C._BUY, C._SELL] ->
+    # case state[:prediction] do
+      # prediction when prediction in [C._BUY, C._SELL] ->
         Logger.debug(inspect(state))
-        Logger.info(fn -> "Predicted action for #{state[:alt_symbol]}: #{prediction_str}" end)
-      _ ->
-        nil
-    end
+        Logger.info(fn -> "Predicted action for #{alt_symbol}: #{prediction_str}" end)
+      # _ ->
+        # nil
+    # end
 
     state
   end
 
   defp trade_loop(state) do
-    state
-    |> update_state()
-    |> act_upon_prediction()
-    |> trade_loop()
+    state = state
+            |> update_state()
+            |> act_upon_prediction()
+
+    :timer.sleep(1_000)
+
+    trade_loop(state)
   end
 
   defp act_upon_prediction(state) do
-    case state[:prediction] do
+    %{
+      alt_symbol: alt_symbol,
+      btc_balance: btc_balance,
+      alt_balance: alt_balance,
+      suggested_trade_price: suggested_trade_price,
+      prediction: prediction,
+      buy_orders: buy_orders,
+      sell_orders: sell_orders
+    } = state
+
+    case prediction do
       C._BUY ->
-        if outdated_open_orders?(state[:buy_orders], state[:suggested_trade_price]) do
+        if outdated_open_orders?(buy_orders, suggested_trade_price) do
           Logger.debug("Got outdated open buy orders, cancelling...")
-          cancel_orders(state[:buy_orders], state[:alt_symbol])
+          cancel_orders(buy_orders, alt_symbol)
           # We are not doing anything else here so that loop repeats and we get updated balances
         end
 
-        if !Enum.empty?(state[:sell_orders]) do
+        if !Enum.empty?(sell_orders) do
           Logger.debug("Got open sell orders, cancelling...")
-          cancel_orders(state[:sell_orders], state[:alt_symbol])
+          cancel_orders(sell_orders, alt_symbol)
         end
 
-        if state[:btc_balance] >= 0.0001 do
+        if btc_balance >= 0.0001 do
           Logger.debug("Got some BTC balance, placing buy order...")
-          place_buy_order(state)
+          place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
         end
       C._HOLD ->
         nil
       C._SELL ->
-        if outdated_open_orders?(state[:sell_orders], state[:suggested_trade_price]) do
+        if outdated_open_orders?(sell_orders, suggested_trade_price) do
           Logger.debug("Found outdated open sell orders, cancelling...")
-          cancel_orders(state[:sell_orders], state[:alt_symbol])
+          cancel_orders(sell_orders, alt_symbol)
           # We are not doing anything else here so that loop repeats and we get updated balances
         end
 
-        if !Enum.empty?(state[:buy_orders]) do
+        if !Enum.empty?(buy_orders) do
           Logger.debug("Got open buy orders, cancelling...")
-          cancel_orders(state[:buy_orders], state[:alt_symbol])
+          cancel_orders(buy_orders, alt_symbol)
         end
 
-        if state[:alt_balance] >= 0.0001 do
+        if alt_balance >= 0.0001 do
           Logger.debug("Got some ALT balance, placing sell order...")
-          place_sell_order(state)
+          place_sell_order(suggested_trade_price, alt_balance, alt_symbol)
         end
     end
 
@@ -181,35 +190,30 @@ defmodule KryptoBrain.Trading.Trader do
     end)
   end
 
-  defp place_buy_order(state) do
-    place_buy_order_response = PoloniexApi.place_buy_order(state[:suggested_trade_price], state[:btc_balance], state[:alt_symbol])
+  defp place_buy_order(suggested_trade_price, btc_balance, alt_symbol) do
+    place_buy_order_response = PoloniexApi.place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
     Logger.info(inspect(place_buy_order_response))
 
     case place_buy_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.debug(fn -> "#{__ENV__.line}: #{inspect(state)}" end)
+        Logger.info(fn -> "Placed buy order for #{alt_symbol}" end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn(fn -> "Attempted to buy #{state[:alt_symbol]} but could not fill the order." end)
+        Logger.warn(fn -> "Attempted to buy #{alt_symbol} but could not fill the order." end)
     end
-
-    state
   end
 
-  defp place_sell_order(state) do
-    place_sell_order_response = PoloniexApi.place_sell_order(state[:suggested_trade_price], state[:alt_balance], state[:alt_symbol])
+  defp place_sell_order(suggested_trade_price, alt_balance, alt_symbol) do
+    place_sell_order_response = PoloniexApi.place_sell_order(suggested_trade_price, alt_balance, alt_symbol)
     Logger.info(inspect(place_sell_order_response))
 
     case place_sell_order_response do
       %{"orderNumber" => _order_number, "resultingTrades" => _trades} ->
-        Logger.debug(fn -> "#{__ENV__.line}: #{inspect(state)}" end)
+        Logger.info(fn -> "Placed sell order for #{alt_symbol}" end)
       %{"error" => "Unable to fill order completely."} ->
-        Logger.warn(fn -> "Attempted to sell #{state[:alt_symbol]} but could not fill the order" end)
+        Logger.warn(fn -> "Attempted to sell #{alt_symbol} but could not fill the order" end)
       %{"error" => "Total must be at least 0.0001."} ->
         Logger.error("Total must be at least 0.0001.")
-        Logger.error(inspect(state))
     end
-
-    state
   end
 
   defp cancel_orders(orders, alt_symbol) do
@@ -219,5 +223,9 @@ defmodule KryptoBrain.Trading.Trader do
     end
 
     true
+  end
+
+  defp get_prediction(python_bridge_pid, alt_symbol) do
+    GenServer.call(python_bridge_pid, {:most_recent_prediction, alt_symbol}, 15_000)
   end
 end
