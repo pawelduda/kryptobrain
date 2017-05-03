@@ -161,8 +161,10 @@ defmodule KryptoBrain.Trading.Trader do
           place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
         end
       C._HOLD ->
-        # TODO: we should cancel all open orders here
-        nil
+        if !Enum.empty?(buy_orders) || !Enum.empty?(sell_orders) do
+          Logger.info(fn -> "[#{alt_symbol}] Got open buy/sell orders and the prediciton is to hold, cancelling..." end)
+          cancel_orders(buy_orders ++ sell_orders, alt_symbol)
+        end
       C._SELL ->
         if outdated_open_orders?(sell_orders, suggested_trade_price) do
           Logger.info(fn -> "[#{alt_symbol}] Found outdated open sell orders, cancelling..." end)
