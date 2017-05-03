@@ -1,4 +1,5 @@
 defmodule KryptoBrain.Bridge.KryptoJanusz do
+  require Logger
   use Export.Python
   use GenServer
 
@@ -21,10 +22,16 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
 
     poloniex_api_url = poloniex_prices_api_url(alt_symbol, ten_days_ago_gmt_timestamp)
 
-    prediction =
+    {prediction, newest_dataset_timestamp} =
       fn -> Python.call(python, predict_newest(poloniex_api_url, @columns, "BTC_#{alt_symbol}"), from_file: "predictor") end
       |> Task.async
       |> Task.await(15_000)
+
+    Logger.warn(fn ->
+      current_timestamp = Calendar.DateTime.now!("GMT") |> Calendar.DateTime.Format.unix
+      timestamp_delta = current_timestamp - newest_dataset_timestamp
+      "[#{alt_symbol}] Delay between now and the newest data sample: #{timestamp_delta}s"
+    end)
 
     {:reply, prediction, python}
   end
