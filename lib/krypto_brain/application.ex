@@ -15,9 +15,9 @@ defmodule KryptoBrain.Application do
       # worker(KryptoBrain.Bridge.KryptoJanusz, []),
 
       worker(KryptoBrain.Trading.Trader, ["PINK"], id: "trader_1"),
-      worker(KryptoBrain.Trading.Trader, ["EMC2"], id: "trader_2"),
-      worker(KryptoBrain.Trading.Trader, ["GNT"], id: "trader_3"),
-      worker(KryptoBrain.Trading.Trader, ["GNO"], id: "trader_4")
+      worker(KryptoBrain.Trading.Trader, ["BCN"], id: "trader_2"),
+      worker(KryptoBrain.Trading.Trader, ["NAV"], id: "trader_3"),
+      worker(KryptoBrain.Trading.Trader, ["VIA"], id: "trader_4")
     ]
 
     opts = [strategy: :one_for_one, name: KryptoBrain.Supervisor, max_seconds: 100, max_restarts: 100]

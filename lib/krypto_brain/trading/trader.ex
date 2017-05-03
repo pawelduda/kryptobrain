@@ -161,6 +161,7 @@ defmodule KryptoBrain.Trading.Trader do
           place_buy_order(suggested_trade_price, btc_balance, alt_symbol)
         end
       C._HOLD ->
+        # TODO: we should cancel all open orders here
         nil
       C._SELL ->
         if outdated_open_orders?(sell_orders, suggested_trade_price) do
@@ -226,6 +227,15 @@ defmodule KryptoBrain.Trading.Trader do
   end
 
   defp get_prediction(python_bridge_pid, alt_symbol) do
-    GenServer.call(python_bridge_pid, {:most_recent_prediction, alt_symbol}, 15_000)
+    {prediction, timestamp_delta} = GenServer.call(python_bridge_pid, {:most_recent_prediction, alt_symbol}, 15_000)
+
+    # If the prediction comes from a dataset that is older than X seconds, discard it
+    if timestamp_delta <= 120 do
+      Logger.info(fn -> "[#{alt_symbol}] Prediction is fresh enough, keeping it." end)
+      prediction
+    else
+      Logger.warn(fn -> "[#{alt_symbol}] Prediction outdated by #{timestamp_delta}s, discarding prediction!" end)
+      C._HOLD
+    end
   end
 end

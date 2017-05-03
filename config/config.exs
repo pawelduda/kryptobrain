@@ -17,17 +17,17 @@ config :krypto_brain, KryptoBrain.Trading.PoloniexApi,
   poloniex_api_key0: System.get_env("POLONIEX_API_KEY0") || "${POLONIEX_API_KEY0}",
   poloniex_api_secret0: System.get_env("POLONIEX_API_SECRET0") || "${POLONIEX_API_SECRET0}",
 
-  EMC2: 1,
+  BCN: 1,
   # p.awelduda91
   poloniex_api_key1: System.get_env("POLONIEX_API_KEY1") || "${POLONIEX_API_KEY1}",
   poloniex_api_secret1: System.get_env("POLONIEX_API_SECRET1") || "${POLONIEX_API_SECRET1}",
 
-  GNT: 2,
+  NAV: 2,
   # pa.welduda91
   poloniex_api_key2: System.get_env("POLONIEX_API_KEY2") || "${POLONIEX_API_KEY2}",
   poloniex_api_secret2: System.get_env("POLONIEX_API_SECRET2") || "${POLONIEX_API_SECRET2}",
 
-  GNO: 3,
+  VIA: 3,
   # paw.elduda91
   poloniex_api_key3: System.get_env("POLONIEX_API_KEY3") || "${POLONIEX_API_KEY3}",
   poloniex_api_secret3: System.get_env("POLONIEX_API_SECRET3") || "${POLONIEX_API_SECRET3}"

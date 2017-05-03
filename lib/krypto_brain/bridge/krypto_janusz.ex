@@ -27,13 +27,12 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
       |> Task.async
       |> Task.await(15_000)
 
-    Logger.warn(fn ->
-      current_timestamp = Calendar.DateTime.now!("GMT") |> Calendar.DateTime.Format.unix
-      timestamp_delta = current_timestamp - newest_dataset_timestamp
-      "[#{alt_symbol}] Delay between now and the newest data sample: #{timestamp_delta}s"
-    end)
+    current_timestamp = Calendar.DateTime.now!("GMT") |> Calendar.DateTime.Format.unix
+    timestamp_delta = current_timestamp - newest_dataset_timestamp
 
-    {:reply, prediction, python}
+    Logger.info(fn -> "[#{alt_symbol}] Delay between now and the newest data sample: #{timestamp_delta}s" end)
+
+    {:reply, {prediction, timestamp_delta}, python}
   end
 
   def terminate(_reason, python) do
