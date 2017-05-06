@@ -11,7 +11,7 @@
 
 defmodule KryptoBrain.Trading.Trader do
   alias KryptoBrain.Constants, as: C
-  alias KryptoBrain.Trading.PoloniexApi
+  alias KryptoBrain.Trading.{PoloniexApi, OutputTablePrinter}
   require KryptoBrain.Constants
   require Logger
   use GenServer
@@ -59,6 +59,7 @@ defmodule KryptoBrain.Trading.Trader do
     |> update_open_orders()
     |> update_prediction()
     |> print_status_message()
+    |> OutputTablePrinter.update_state_of_trader
   end
 
   defp update_balances(%{alt_symbol: alt_symbol} = state) do

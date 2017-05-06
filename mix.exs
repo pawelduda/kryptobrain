@@ -39,6 +39,7 @@ defmodule KryptoBrain.Mixfile do
       {:calendar, "~> 0.16.1"},
       {:timex, "~> 3.0"},
       {:logger_file_backend, "0.0.4"},
+      {:table_rex, "~> 0.10"},
 
       {:credo, "~> 0.7", only: [:dev, :test]}
     ]
