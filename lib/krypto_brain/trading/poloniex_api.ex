@@ -1,4 +1,6 @@
 defmodule KryptoBrain.Trading.PoloniexApi do
+  require Logger
+
   def get_balances(alt_symbol) do
     post_data = %{command: "returnBalances", nonce: nonce()}
     trading_api_post_response(alt_symbol, post_data)
@@ -59,7 +61,11 @@ defmodule KryptoBrain.Trading.PoloniexApi do
       encoded_post_data,
       trading_api_headers(alt_symbol, encoded_post_data)
     )
-    Poison.decode!(response_body)
+
+    case Poison.decode(response_body) do
+      {:ok, response} -> response
+      {:error, _reason} -> raise "Got invalid response from Poloniex API, probably got banned temporarily."
+    end
   end
 
   defp trading_api_headers(alt_symbol, encoded_post_data) do

@@ -128,7 +128,7 @@ defmodule KryptoBrain.Trading.Trader do
             |> update_state()
             |> act_upon_prediction()
 
-    :timer.sleep(1_000)
+    :timer.sleep(5_000)
 
     trade_loop(state)
   end
