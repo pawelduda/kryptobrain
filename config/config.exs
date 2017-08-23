@@ -32,6 +32,10 @@ config :krypto_brain, KryptoBrain.Trading.PoloniexApi,
   poloniex_api_key3: System.get_env("POLONIEX_API_KEY3") || "${POLONIEX_API_KEY3}",
   poloniex_api_secret3: System.get_env("POLONIEX_API_SECRET3") || "${POLONIEX_API_SECRET3}"
 
+config :krypto_brain, KryptoBrain.Trading.BittrexApi,
+  bittrex_api_key0: System.get_env("BITTREX_API_KEY0") || "${BITTREX_API_KEY0}",
+  bittrex_api_secret0: System.get_env("BITTREX_API_SECRET0") || "${BITTREX_API_SECRET0}"
+
 # Useful when debugging OTP:
 # config :logger, handle_sasl_reports: true
 
