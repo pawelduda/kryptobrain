@@ -49,10 +49,7 @@ defmodule KryptoBrain.Trading.BittrexTrader do
   end
 
   def update_open_orders(state) do
-    open_orders =
-      BittrexApi.get_open_orders()
-      |> IO.inspect
-
+    open_orders = BittrexApi.get_open_orders()
     state |> Map.update!(:open_orders, fn(_) -> open_orders end)
   end
 

@@ -2,30 +2,22 @@ defmodule KryptoBrain.Trading.BittrexApi do
   require Logger
 
   def get_balances do
-    uri = "https://bittrex.com/api/v1.1/account/getbalances?apikey=#{api_key()}&nonce=#{nonce()}"
-
-    %HTTPoison.Response{body: response_body} =
-      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
-
-    case Poison.decode(response_body) do
-      {:ok, response} -> (%{"success" => true} = response) && response["result"]
-      {:error, reason} -> raise "Could not decode response from Bittrex. Reason: #{inspect(reason)}"
-    end
+    trading_api_get_response("https://bittrex.com/api/v1.1/account/getbalances")
   end
 
   def get_balance(alt_symbol) do
-    uri =
-      "https://bittrex.com/api/v1.1/account/getbalance?apikey=#{api_key()}&nonce=#{nonce()}&currency=#{alt_symbol}"
-
-    %HTTPoison.Response{body: response_body} =
-      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
-
-    %{"success" => true} = Poison.decode!(response_body)
+    trading_api_get_response("https://bittrex.com/api/v1.1/account/getbalance", "currency=#{alt_symbol}")
   end
 
   def get_open_orders do
-    uri =
-      "https://bittrex.com/api/v1.1/market/getopenorders?apikey=#{api_key()}&nonce=#{nonce()}"
+    trading_api_get_response("https://bittrex.com/api/v1.1/market/getopenorders")
+  end
+
+  defp trading_api_get_response(uri_base, query_params \\ nil) do
+    uri = case query_params do
+      nil -> "#{uri_base}?apikey=#{api_key()}&nonce=#{nonce()}"
+      _ -> "#{uri_base}?apikey=#{api_key()}&nonce=#{nonce()}&#{query_params}"
+    end
 
     %HTTPoison.Response{body: response_body} =
       HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
