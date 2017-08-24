@@ -1,6 +1,9 @@
+# TODO:
+# - Do not consider markets that are about to be delisted
+
 defmodule KryptoBrain.Trading.BittrexTrader do
   alias KryptoBrain.Constants, as: C
-  alias KryptoBrain.Trading.BittrexApi
+  alias KryptoBrain.Trading.{BittrexApi, BittrexSignalsFetcher}
   require Logger
 
   def start_link() do
@@ -14,6 +17,7 @@ defmodule KryptoBrain.Trading.BittrexTrader do
     state = %{
       balances: [],
       open_orders: [],
+      signals: [],
       python_bridge_pid: python_bridge_pid
     }
 
@@ -29,7 +33,7 @@ defmodule KryptoBrain.Trading.BittrexTrader do
   end
 
   def handle_info(:start_trading, state) do
-    update_state(state) |> trade_loop
+    update_state(state)# |> trade_loop
     {:noreply, state}
   end
 
@@ -37,6 +41,7 @@ defmodule KryptoBrain.Trading.BittrexTrader do
     state
     |> update_balances()
     |> update_open_orders()
+    |> update_signals()
   end
 
   defp update_balances(state) do
@@ -51,6 +56,11 @@ defmodule KryptoBrain.Trading.BittrexTrader do
   def update_open_orders(state) do
     open_orders = BittrexApi.get_open_orders()
     state |> Map.update!(:open_orders, fn(_) -> open_orders end)
+  end
+
+  def update_signals(state) do
+    signals = BittrexSignalsFetcher.get_signals()
+    state |> Map.update!(:signals, fn(_) -> signals end)
   end
 
   defp trade_loop(state) do

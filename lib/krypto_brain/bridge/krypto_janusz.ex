@@ -35,6 +35,21 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
     {:reply, {prediction, timestamp_delta}, python}
   end
 
+  def handle_call({:most_recent_prediction_bittrex, chart_data}, _from, python) do
+    {signal, retrieval_date_gmt} =
+      fn ->
+        Python.call(
+          python,
+          predict_newest(chart_data),
+          from_file: "predictor_bittrex"
+        )
+      end
+      |> Task.async
+      |> Task.await(15_000)
+
+    {:reply, {signal, retrieval_date_gmt}, python}
+  end
+
   def terminate(_reason, python) do
     Python.stop(python)
   end
