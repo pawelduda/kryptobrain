@@ -1,5 +1,7 @@
 # TODO:
 # - Do not consider markets that are about to be delisted
+# - Consider looking at 2h or even 4h charts rather than 1h (this will require manually merging records but might be
+#   worth it)
 
 defmodule KryptoBrain.Trading.BittrexTrader do
   alias KryptoBrain.Constants, as: C
