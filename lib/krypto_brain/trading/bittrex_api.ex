@@ -24,29 +24,15 @@ defmodule KryptoBrain.Trading.BittrexApi do
     trading_api_get_response("https://bittrex.com/api/v1.1/market/getopenorders")
   end
 
-  defp public_api_get_response(uri, raw_response? \\ false)
-
-  defp public_api_get_response(uri, raw_response?) when raw_response? do
-    %HTTPoison.Response{body: response_body} =
-      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
+  defp public_api_get_response(uri, raw_response? \\ false) do
+    %HTTPoison.Response{body: response_body} = HTTPoison.get!(uri)
 
     case Poison.decode(response_body) do
-      {:ok, response} -> (%{"success" => true} = response) && (response["result"] |> Poison.encode!)
-      {:error, reason} ->
-        raise ~s"""
-          Could not decode response from Bittrex.
-          Reason: #{inspect(reason)}.
-          Raw response body: #{response_body}
-        """
-    end
-  end
-
-  defp public_api_get_response(uri, raw_response?) when not raw_response? do
-    %HTTPoison.Response{body: response_body} =
-      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
-
-    case Poison.decode(response_body) do
-      {:ok, response} -> (%{"success" => true} = response) && response["result"]
+      {:ok, response} ->
+        case raw_response? do
+          true -> (%{"success" => true} = response) && (response["result"] |> Poison.encode!)
+          false -> (%{"success" => true} = response) && response["result"]
+        end
       {:error, reason} ->
         raise ~s"""
           Could not decode response from Bittrex.
