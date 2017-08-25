@@ -27,12 +27,19 @@ defmodule KryptoBrain.Trading.BittrexApi do
   defp public_api_get_response(uri, raw_response? \\ false) do
     %HTTPoison.Response{body: response_body} = HTTPoison.get!(uri)
 
+    # TODO: refactor code smell
     case Poison.decode(response_body) do
       {:ok, response} ->
-        case raw_response? do
-          true -> (%{"success" => true} = response) && (response["result"] |> Poison.encode!)
-          false -> (%{"success" => true} = response) && response["result"]
+        case response do
+          %{"success" => true} ->
+            case raw_response? do
+              true -> response["result"] |> Poison.encode!
+              false -> response && response["result"]
+            end
+          %{"success" => false, "message" => "INVALID_MARKET"} ->
+            nil
         end
+
       {:error, reason} ->
         raise ~s"""
           Could not decode response from Bittrex.

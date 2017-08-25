@@ -6,19 +6,27 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
 
   def get_signals do
     currencies_data = BittrexApi.get_currencies()
-    market_names = Enum.map(currencies_data, &(&1["MarketName"]))
+    market_names =
+      Enum.map(currencies_data, &(&1["MarketName"]))
+      |> filter_btc_market_names()
 
-    # IO.inspect market_names
-    # data = market_names
-    # |> Enum.map(&(Task.async(fn ->
-      # %{market_name: &1, market_ticks: BittrexApi.get_market_ticks(&1, "hour", true)}
-    # end)))
-    # |> Task.yield_many(60_000)
-    # |> Enum.map(fn(result) ->
-      # {%Task{}, {:ok, market_data}} = result;
-      # market_data
-    # end)
-    # File.write!("charts_sample_data.txt", :erlang.term_to_binary(data))
+    data = market_names
+    |> Enum.map(&(Task.async(fn ->
+      market_ticks = BittrexApi.get_market_ticks(&1, "hour", true)
+      # TODO: refactor code smell
+      case market_ticks do
+        nil -> nil
+        _ -> %{market_name: &1, market_ticks: market_ticks}
+      end
+    end)))
+    |> Task.yield_many(60_000)
+    |> Enum.map(fn(result) ->
+      {%Task{}, {:ok, market_data}} = result;
+      market_data
+    end)
+    |> Enum.filter(&(&1)) # Remove any falsey values
+    File.write!("charts_sample_data.txt", :erlang.term_to_binary(data))
+
     File.read!("charts_sample_data.txt")
     |> :erlang.binary_to_term
     |> Enum.map(fn(market_data) ->
@@ -53,5 +61,12 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
       Logger.warn(fn -> "Signal outdated by #{timestamp_delta}s." end)
       {:error, :outdated, signal}
     end
+  end
+
+  defp filter_btc_market_names(market_names) do
+    Enum.filter(market_names, fn(market_name) ->
+      [left_market_name_part | _rest] = String.split(market_name, "-")
+      left_market_name_part == "BTC"
+    end)
   end
 end
