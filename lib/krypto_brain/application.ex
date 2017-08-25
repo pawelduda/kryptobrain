@@ -14,7 +14,8 @@ defmodule KryptoBrain.Application do
       # worker(KryptoBrain.Trading.NonceGenerator, []),
       # worker(KryptoBrain.Bridge.KryptoJanusz, []),
 
-      worker(KryptoBrain.Trading.OutputTablePrinter, []),
+      worker(KryptoBrain.Trading.OutputTablePrinterBittrex, []),
+      # worker(KryptoBrain.Trading.OutputTablePrinter, []),
       worker(KryptoBrain.Trading.BittrexTrader, [])
 
       # worker(KryptoBrain.Trading.Trader, ["DOGE"], id: "trader_1"),

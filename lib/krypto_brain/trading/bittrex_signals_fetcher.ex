@@ -1,11 +1,14 @@
 defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
+  alias KryptoBrain.Constants, as: C
   alias KryptoBrain.Trading.BittrexApi
   require Logger
+  require KryptoBrain.Constants
 
   def get_signals do
     currencies_data = BittrexApi.get_currencies()
     market_names = Enum.map(currencies_data, &(&1["MarketName"]))
 
+    # IO.inspect market_names
     # data = market_names
     # |> Enum.map(&(Task.async(fn ->
       # %{market_name: &1, market_ticks: BittrexApi.get_market_ticks(&1, "hour", true)}
@@ -19,8 +22,12 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     File.read!("charts_sample_data.txt")
     |> :erlang.binary_to_term
     |> Enum.map(fn(market_data) ->
-      IO.inspect market_data[:market_name]
-      IO.inspect get_signal(market_data[:market_ticks])
+      signal = case get_signal(market_data[:market_ticks]) do
+        {:ok, signal} -> signal
+        {:error, :outdated, _signal} -> C._HOLD
+      end
+
+      %{market_name: market_data[:market_name], signal: signal}
     end)
 
   end

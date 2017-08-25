@@ -5,7 +5,8 @@
 
 defmodule KryptoBrain.Trading.BittrexTrader do
   alias KryptoBrain.Constants, as: C
-  alias KryptoBrain.Trading.{BittrexApi, BittrexSignalsFetcher}
+  alias KryptoBrain.Trading.{BittrexApi, BittrexSignalsFetcher, OutputTablePrinterBittrex}
+  require KryptoBrain.Constants
   require Logger
 
   def start_link() do
@@ -44,6 +45,7 @@ defmodule KryptoBrain.Trading.BittrexTrader do
     |> update_balances()
     |> update_open_orders()
     |> update_signals()
+    |> report_status()
   end
 
   defp update_balances(state) do
@@ -63,6 +65,14 @@ defmodule KryptoBrain.Trading.BittrexTrader do
   def update_signals(state) do
     signals = BittrexSignalsFetcher.get_signals()
     state |> Map.update!(:signals, fn(_) -> signals end)
+  end
+
+  defp report_status(%{signals: signals} = state) do
+    buy_signals = Enum.filter(signals, &(&1[:signal] == C._BUY))
+    sell_signals = Enum.filter(signals, &(&1[:signal] == C._SELL))
+    OutputTablePrinterBittrex.update_state_of_trader(buy_signals, sell_signals)
+
+    state
   end
 
   defp trade_loop(state) do
