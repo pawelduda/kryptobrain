@@ -9,8 +9,8 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
   @blacklisted_markets ~w(BTC-HKG BTC-XBB)
 
   def get_signals do
-    market_summaries = BittrexApi.get_market_summaries()
     market_summaries =
+      BittrexApi.get_market_summaries()
       Enum.map(market_summaries, &(Map.take(&1, ["MarketName", "BaseVolume"])))
       |> filter_btc_markets()
       |> reject_blacklisted_markets()
