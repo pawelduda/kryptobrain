@@ -1,6 +1,6 @@
 defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
   alias KryptoBrain.Constants, as: C
-  alias KryptoBrain.Trading.BittrexApi
+  alias KryptoBrain.Trading.{BittrexApi, SignalData}
   require Logger
   require KryptoBrain.Constants
 
@@ -30,18 +30,18 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     File.read!("charts_sample_data.txt")
     |> :erlang.binary_to_term
     |> Enum.map(fn(market_data) ->
-      signal = case get_signal(market_data[:market_ticks]) do
-        {:ok, signal} -> signal
-        {:error, :outdated, _signal} -> C._HOLD
+      signal_data = case get_signal(market_data[:market_ticks]) do
+        {:ok, signal_data} -> signal_data
+        {:error, :outdated, _signal_data} -> C._HOLD
       end
 
-      %{market_name: market_data[:market_name], signal: signal}
+      %{market_name: market_data[:market_name], signal_data: signal_data}
     end)
 
   end
 
   defp get_signal(chart_data) do
-    {signal, retrieval_date_gmt} =
+    signal_data = %SignalData{} =
       GenServer.call(KryptoBrain.Bridge.KryptoJanusz, {:most_recent_prediction_bittrex, chart_data}, 15_000)
 
     # TODO: ensure we are good here with timezones
@@ -56,10 +56,10 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
         Signal is new enough, keeping it.
         """
       end)
-      {:ok, signal}
+      {:ok, signal_data}
     else
       Logger.warn(fn -> "Signal outdated by #{timestamp_delta}s." end)
-      {:error, :outdated, signal}
+      {:error, :outdated, signal_data}
     end
   end
 

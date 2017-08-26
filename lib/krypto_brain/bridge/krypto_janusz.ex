@@ -1,4 +1,5 @@
 defmodule KryptoBrain.Bridge.KryptoJanusz do
+  alias KryptoBrain.Trading.SignalData
   require Logger
   use Export.Python
   use GenServer
@@ -36,7 +37,7 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
   end
 
   def handle_call({:most_recent_prediction_bittrex, chart_data}, _from, python) do
-    {signal, retrieval_date_gmt} =
+    {signal, retrieval_date_gmt, last_price, last_upper_bband, last_lower_bband, last_stoch_rsi_k} =
       fn ->
         Python.call(
           python,
@@ -47,7 +48,18 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
       |> Task.async
       |> Task.await(15_000)
 
-    {:reply, {signal, retrieval_date_gmt}, python}
+    {
+      :reply,
+      %SignalData{
+        signal: signal,
+        retrieval_date_gmt: retrieval_date_gmt,
+        last_price: last_price,
+        last_upper_bband: last_upper_bband,
+        last_lower_bband: last_lower_bband,
+        last_stoch_rsi_k: last_stoch_rsi_k
+      },
+      python
+    }
   end
 
   def terminate(_reason, python) do
