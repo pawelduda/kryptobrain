@@ -65,7 +65,7 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
 
     IO.puts("\n")
     TableRex.Table.new(rows, @headers)
-    |> TableRex.Table.put_column_meta(3, color: fn(text, value) ->
+    |> TableRex.Table.put_column_meta(1, color: fn(text, value) ->
       case value do
         "⬆️ BUY" -> [:green, text]
         "HOLD" -> [:blue, text]
