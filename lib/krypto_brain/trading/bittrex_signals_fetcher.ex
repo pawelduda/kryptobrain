@@ -5,18 +5,18 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
   require KryptoBrain.Constants
 
   def get_signals do
-    currencies_data = BittrexApi.get_currencies()
-    market_names =
-      Enum.map(currencies_data, &(&1["MarketName"]))
-      |> filter_btc_market_names()
+    market_summaries = BittrexApi.get_market_summaries()
+    market_summaries =
+      Enum.map(market_summaries, &(Map.take(&1, ["MarketName", "BaseVolume"])))
+      |> filter_btc_markets()
 
-    data = market_names
+    data = market_summaries
     |> Enum.map(&(Task.async(fn ->
-      market_ticks = BittrexApi.get_market_ticks(&1, "hour", true)
+      market_ticks = BittrexApi.get_market_ticks(&1["MarketName"], "hour", true)
       # TODO: refactor code smell
       case market_ticks do
         nil -> nil
-        _ -> %{market_name: &1, market_ticks: market_ticks}
+        _ -> %{market_name: &1["MarketName"], daily_volume: &1["BaseVolume"], market_ticks: market_ticks}
       end
     end)))
     |> Task.yield_many(60_000)
@@ -35,9 +35,8 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
         {:error, :outdated, _signal_data} -> C._HOLD
       end
 
-      %{market_name: market_data[:market_name], signal_data: signal_data}
+      %{market_name: market_data[:market_name], daily_volume: market_data[:daily_volume], signal_data: signal_data}
     end)
-
   end
 
   defp get_signal(chart_data) do
@@ -63,9 +62,9 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     end
   end
 
-  defp filter_btc_market_names(market_names) do
-    Enum.filter(market_names, fn(market_name) ->
-      [left_market_name_part | _rest] = String.split(market_name, "-")
+  defp filter_btc_markets(market_summaries) do
+    Enum.filter(market_summaries, fn(market_summary) ->
+      [left_market_name_part | _rest] = String.split(market_summary["MarketName"], "-")
       left_market_name_part == "BTC"
     end)
   end

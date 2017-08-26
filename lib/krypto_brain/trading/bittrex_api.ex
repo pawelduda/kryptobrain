@@ -1,7 +1,7 @@
 defmodule KryptoBrain.Trading.BittrexApi do
   require Logger
 
-  def get_currencies do
+  def get_market_summaries do
     public_api_get_response("https://bittrex.com/api/v1.1/public/getmarketsummaries")
   end
 

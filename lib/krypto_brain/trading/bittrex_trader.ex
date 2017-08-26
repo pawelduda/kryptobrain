@@ -68,8 +68,14 @@ defmodule KryptoBrain.Trading.BittrexTrader do
   end
 
   defp report_status(%{signals: signals} = state) do
-    buy_signals = Enum.filter(signals, &(&1[:signal_data].signal == C._BUY))
-    sell_signals = Enum.filter(signals, &(&1[:signal_data].signal == C._SELL))
+    buy_signals =
+      Enum.filter(signals, &(&1[:signal_data].signal == C._BUY))
+      |> Enum.sort_by(&(&1[:daily_volume]))
+      |> Enum.reverse
+    sell_signals =
+      Enum.filter(signals, &(&1[:signal_data].signal == C._SELL))
+      |> Enum.sort_by(&(&1[:daily_volume]))
+      |> Enum.reverse
 
     OutputTablePrinterBittrex.update_state_of_trader(buy_signals, sell_signals)
 
