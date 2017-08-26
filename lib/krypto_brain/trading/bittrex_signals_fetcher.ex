@@ -32,7 +32,7 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     |> Enum.map(fn(market_data) ->
       signal_data = case get_signal(market_data[:market_ticks]) do
         {:ok, signal_data} -> signal_data
-        {:error, :outdated, _signal_data} -> C._HOLD
+        {:error, :outdated, signal_data} -> signal_data # TODO: improve error handling when signal is outdated
       end
 
       %{market_name: market_data[:market_name], daily_volume: market_data[:daily_volume], signal_data: signal_data}
@@ -43,12 +43,12 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     signal_data = %SignalData{} =
       GenServer.call(KryptoBrain.Bridge.KryptoJanusz, {:most_recent_prediction_bittrex, chart_data}, 15_000)
 
-    # TODO: ensure we are good here with timezones
-    retrieval_date_timestamp = # TODO |> Calendar.DateTime.Format.unix
-    current_timestamp = Calendar.DateTime.now!("GMT") |> Calendar.DateTime.Format.unix
+    {:ok, retrieval_date} = (signal_data.retrieval_date_utc <> "Z") |> Calendar.DateTime.Parse.rfc3339_utc
+    retrieval_date_timestamp = Calendar.DateTime.Format.unix(retrieval_date)
+    current_timestamp = Calendar.DateTime.now_utc |> Calendar.DateTime.Format.unix
     timestamp_delta = current_timestamp - retrieval_date_timestamp
 
-    if timestamp_delta <= 300 do
+    if timestamp_delta <= 600 do
       Logger.info(fn ->
         """
         Delay between now and the newest data sample: #{timestamp_delta}s

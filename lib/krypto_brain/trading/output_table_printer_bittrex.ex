@@ -6,7 +6,7 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
   @headers [
     "Market name",
     "Signal",
-    "Retrieval date GMT",
+    "Retrieval date UTC",
     "Daily volume (BTC)",
     "Last upper BBAND",
     "Last price",
@@ -32,7 +32,7 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
       [
         market_name: &1[:market_name],
         signal: signal_int_to_str(&1[:signal_data].signal),
-        retrieval_date_gmt: &1[:signal_data].retrieval_date_gmt,
+        retrieval_date_utc: &1[:signal_data].retrieval_date_utc,
         daily_volume: &1[:daily_volume],
         last_upper_bband: format_price_as_satoshis(&1[:signal_data].last_upper_bband),
         last_price: format_price_as_satoshis(&1[:signal_data].last_price),
@@ -44,7 +44,7 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
       [
         market_name: &1[:market_name],
         signal: signal_int_to_str(&1[:signal_data].signal),
-        retrieval_date_gmt: &1[:signal_data].retrieval_date_gmt,
+        retrieval_date_utc: &1[:signal_data].retrieval_date_utc,
         daily_volume: &1[:daily_volume],
         last_upper_bband: format_price_as_satoshis(&1[:signal_data].last_upper_bband),
         last_price: format_price_as_satoshis(&1[:signal_data].last_price),
