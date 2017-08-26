@@ -65,7 +65,7 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
 
     IO.puts("\n")
     TableRex.Table.new(rows, @headers)
-    |> TableRex.Table.put_column_meta(1, color: &add_color_meta_to_signal_column/2)
+    |> TableRex.Table.put_column_meta(1, color: &signal_column_color_meta/2)
     |> TableRex.Table.render!
     |> IO.puts
   end
@@ -74,10 +74,10 @@ defmodule KryptoBrain.Trading.OutputTablePrinterBittrex do
   defp signal_int_to_str(C._HOLD), do: "HOLD"
   defp signal_int_to_str(C._SELL), do: "⬇️ SELL"
 
-  defp add_color_meta_to_signal_column(text, "⬆️ BUY"), do: [:green, text]
-  defp add_color_meta_to_signal_column(text, "HOLD"), do: [:blue, text]
-  defp add_color_meta_to_signal_column(text, "⬇️ SELL"), do: [:red, text]
-  defp add_color_meta_to_signal_column(text, _value), do: text
+  defp signal_column_color_meta(text, "⬆️ BUY"), do: [:green, text]
+  defp signal_column_color_meta(text, "HOLD"), do: [:blue, text]
+  defp signal_column_color_meta(text, "⬇️ SELL"), do: [:red, text]
+  defp signal_column_color_meta(text, _value), do: text
 
   defp format_price_as_satoshis(float_price) do
     :erlang.float_to_binary(float_price, [decimals: 8])
