@@ -4,11 +4,16 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
   require Logger
   require KryptoBrain.Constants
 
+  # This is a manual list of markets to avoid due to reasons such as being delisted, etc.
+  # TODO: possibly switch to a more dynamic source of this data, i.e. file or database
+  @blacklisted_markets ~w(BTC-HKG BTC-XBB)
+
   def get_signals do
     market_summaries = BittrexApi.get_market_summaries()
     market_summaries =
       Enum.map(market_summaries, &(Map.take(&1, ["MarketName", "BaseVolume"])))
       |> filter_btc_markets()
+      |> reject_blacklisted_markets()
 
     data = market_summaries
     |> Enum.map(&(Task.async(fn ->
@@ -67,5 +72,9 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
       [left_market_name_part | _rest] = String.split(market_summary["MarketName"], "-")
       left_market_name_part == "BTC"
     end)
+  end
+
+  defp reject_blacklisted_markets(market_summaries) do
+    Enum.reject(market_summaries, &(Enum.member?(@blacklisted_markets, &1["MarketName"])))
   end
 end
