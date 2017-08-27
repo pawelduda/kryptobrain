@@ -18,7 +18,9 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     data = market_summaries
     |> Enum.map(&(Task.async(fn ->
       market_ticks = BittrexApi.get_market_ticks(&1["MarketName"], "hour", true)
+      IO.write "🚀 "
       latest_tick = BittrexApi.get_latest_tick(&1["MarketName"], "hour", true)
+      IO.write "🚀 "
       # TODO: refactor code smell
       case market_ticks do
         nil -> nil
