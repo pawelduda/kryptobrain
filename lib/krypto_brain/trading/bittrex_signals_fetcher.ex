@@ -69,7 +69,7 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
 
   defp filter_btc_markets(market_summaries) do
     Enum.filter(market_summaries, fn(market_summary) ->
-      [left_market_name_part | _rest] = String.split(market_summary["MarketName"], "-")
+      [left_market_name_part | _] = String.split(market_summary["MarketName"], "-")
       left_market_name_part == "BTC"
     end)
   end

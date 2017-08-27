@@ -1,6 +1,8 @@
 defmodule KryptoBrain.Trading.BittrexApi do
   require Logger
 
+  @request_options [timeout: 30_000, recv_timeout: 30_000]
+
   def get_market_summaries do
     public_api_get_response("https://bittrex.com/api/v1.1/public/getmarketsummaries")
   end
@@ -25,7 +27,7 @@ defmodule KryptoBrain.Trading.BittrexApi do
   end
 
   defp public_api_get_response(uri, raw_response? \\ false) do
-    %HTTPoison.Response{body: response_body} = HTTPoison.get!(uri)
+    %HTTPoison.Response{body: response_body} = HTTPoison.get!(uri, [], @request_options)
 
     # TODO: refactor code smell
     case Poison.decode(response_body) do
@@ -56,7 +58,7 @@ defmodule KryptoBrain.Trading.BittrexApi do
     end
 
     %HTTPoison.Response{body: response_body} =
-      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)])
+      HTTPoison.get!(uri, ["apisign": sign_uri_with_api_secret(api_secret(), uri)], @request_options)
 
     case Poison.decode(response_body) do
       {:ok, response} -> (%{"success" => true} = response) && response["result"]
