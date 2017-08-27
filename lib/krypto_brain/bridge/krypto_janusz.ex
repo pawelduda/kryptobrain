@@ -36,12 +36,12 @@ defmodule KryptoBrain.Bridge.KryptoJanusz do
     {:reply, {prediction, timestamp_delta}, python}
   end
 
-  def handle_call({:most_recent_prediction_bittrex, chart_data}, _from, python) do
+  def handle_call({:most_recent_prediction_bittrex, market_ticks, latest_tick}, _from, python) do
     {signal, retrieval_date_utc, last_upper_bband, last_price, last_lower_bband, last_stoch_rsi_k} =
       fn ->
         Python.call(
           python,
-          predict_newest(chart_data),
+          predict_newest(market_ticks, latest_tick),
           from_file: "predictor_bittrex"
         )
       end

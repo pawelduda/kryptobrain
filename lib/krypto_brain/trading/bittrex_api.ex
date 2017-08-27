@@ -7,6 +7,13 @@ defmodule KryptoBrain.Trading.BittrexApi do
     public_api_get_response("https://bittrex.com/api/v1.1/public/getmarketsummaries")
   end
 
+  def get_latest_tick(market_name, tick_interval \\ "hour", raw_response? \\ false) do
+    public_api_get_response(
+      "https://bittrex.com/Api/v2.0/pub/market/GetLatestTick?marketName=#{market_name}&tickInterval=#{tick_interval}",
+      raw_response?
+    )
+  end
+
   def get_market_ticks(market_name, tick_interval \\ "hour", raw_response? \\ false) do
     public_api_get_response(
       "https://bittrex.com/Api/v2.0/pub/market/GetTicks?marketName=#{market_name}&tickInterval=#{tick_interval}",

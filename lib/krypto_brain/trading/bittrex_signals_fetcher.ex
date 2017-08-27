@@ -11,17 +11,23 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
   def get_signals do
     market_summaries =
       BittrexApi.get_market_summaries()
-      Enum.map(market_summaries, &(Map.take(&1, ["MarketName", "BaseVolume"])))
+      |> Enum.map(&(Map.take(&1, ["MarketName", "BaseVolume"])))
       |> filter_btc_markets()
       |> reject_blacklisted_markets()
 
     data = market_summaries
     |> Enum.map(&(Task.async(fn ->
       market_ticks = BittrexApi.get_market_ticks(&1["MarketName"], "hour", true)
+      latest_tick = BittrexApi.get_latest_tick(&1["MarketName"], "hour", true)
       # TODO: refactor code smell
       case market_ticks do
         nil -> nil
-        _ -> %{market_name: &1["MarketName"], daily_volume: &1["BaseVolume"], market_ticks: market_ticks}
+        _ -> %{
+          market_name: &1["MarketName"],
+          daily_volume: &1["BaseVolume"],
+          market_ticks: market_ticks,
+          latest_tick: latest_tick
+        }
       end
     end)))
     |> Task.yield_many(60_000)
@@ -35,7 +41,7 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     File.read!("charts_sample_data.txt")
     |> :erlang.binary_to_term
     |> Enum.map(fn(market_data) ->
-      signal_data = case get_signal(market_data[:market_ticks]) do
+      signal_data = case get_signal(market_data[:market_ticks], market_data[:latest_tick]) do
         {:ok, signal_data} -> signal_data
         {:error, :outdated, signal_data} -> signal_data # TODO: improve error handling when signal is outdated
       end
@@ -44,9 +50,11 @@ defmodule KryptoBrain.Trading.BittrexSignalsFetcher do
     end)
   end
 
-  defp get_signal(chart_data) do
+  defp get_signal(market_ticks, latest_tick) do
     signal_data = %SignalData{} =
-      GenServer.call(KryptoBrain.Bridge.KryptoJanusz, {:most_recent_prediction_bittrex, chart_data}, 15_000)
+      GenServer.call(
+        KryptoBrain.Bridge.KryptoJanusz, {:most_recent_prediction_bittrex, market_ticks, latest_tick}, 15_000
+      )
 
     {:ok, retrieval_date} = (signal_data.retrieval_date_utc <> "Z") |> Calendar.DateTime.Parse.rfc3339_utc
     retrieval_date_timestamp = Calendar.DateTime.Format.unix(retrieval_date)
